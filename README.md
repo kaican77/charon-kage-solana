@@ -29,8 +29,8 @@ SIGNAL_SERVER_KEY=your_key_here
 ## Install
 
 ```bash
-git clone git@github.com:yunus-0x/charon.git
-cd charon
+git clone git@github.com:kaican77/charon-kage-solana.git
+cd charon-kage-solana
 npm install
 cp .env.example .env
 ```
@@ -101,12 +101,12 @@ LLM_CANDIDATE_MAX_AGE_MS=600000
 
 `LLM_BASE_URL` accepts any OpenAI-compatible endpoint. The default is MiniMax M2.7, which is fast and cheap for this use case. OpenAI (`https://api.openai.com/v1`), Groq, and local Ollama endpoints all work — just set the matching `LLM_MODEL`.
 
-Set `ENABLE_LLM=false` to disable LLM globally. Individual strategies also have a `use_llm` flag — strategies with `use_llm: false` (e.g. `degen`) auto-approve any candidate that passes filters without calling the LLM.
+Set `ENABLE_LLM=false` to disable LLM globally. Individual strategies also have a `use_llm` flag — strategies with `use_llm: false` auto-approve any candidate that passes filters without calling the LLM.
 
 Each strategy has its own `llm_min_confidence` threshold. Configure it from `/menu → Strategy`, or:
 
 ```bash
-/stratset sniper llm_min_confidence 70
+/stratset smart_money llm_min_confidence 70
 ```
 
 ## Execution Modes
@@ -138,21 +138,19 @@ Use `/menu → Strategy` or commands:
 
 ```bash
 /strategy
-/strategy sniper
 /strategy dip_buy
 /strategy smart_money
-/strategy degen
-/stratset sniper tp_percent 75
+/strategy akashi_zone
+/stratset smart_money tp_percent 75
 ```
 
 Default strategies:
 
-- `sniper`: fee-claim overlap, immediate entry, LLM on.
-- `dip_buy`: waits for ATH-distance dip alerts.
-- `smart_money`: stricter holder/trending quality, partial TP support.
-- `degen`: lower source threshold, rule-based (no LLM).
+- `smart_money`: stricter holder/trending quality, partial TP support. LLM on, min confidence 70%.
+- `dip_buy`: waits for ATH-distance dip alerts, immediate-reopen style entry. LLM on.
+- `akashi_zone`: balanced medium-cap filter (15k–750k mcap, 500+ holders, max top20 holder 60%), partial TP at +50% selling 30%. LLM on, min confidence 65%.
 
-Strategy settings are stored in SQLite and hot-read. Menu changes apply without restart.
+Retired strategies `sniper` and `degen` were removed. Strategy settings are stored in SQLite and hot-read. Menu changes apply without restart.
 
 ## Telegram Commands
 
@@ -170,6 +168,21 @@ Strategy settings are stored in SQLite and hot-read. Menu changes apply without 
 /walletremove <label>
 /wallets
 ```
+
+## Telegram UI
+
+Charon's Telegram interface uses a structured card layout with emoji section dividers (`━━━` for headers, `─────` for sub-sections), per-field icons, and color-coded PnL (🟢 profit / 🔴 loss / ⚪ neutral).
+
+Main menu sections:
+
+- 🎯 **Strategy** — switch between `dip_buy`, `smart_money`, `akashi_zone` with live config preview
+- 🤖 **Agent** — toggle agent, switch `dry_run`/`confirm`/`live` mode, batch size, freshness
+- ⚙️ **Filters** — view active strategy filter gates
+- 👛 **Wallets** — saved-wallet list for exposure/PnL tracking
+- 📍 **Positions** — dry-run/live position cards with TP/SL/trailing/PnL
+- 📊 **PnL** — per-saved-wallet win rate and PnL (fetched from Jupiter PnL API)
+
+Candidate and screening cards show signal route, market cap, liquidity, holder distribution, trending rank, chart context, and LLM verdict. Each card carries inline action buttons (View, Dry Buy, Set TP/SL, Ignore, Positions).
 
 ## Storage
 
@@ -208,5 +221,5 @@ SQLite/menu settings are hot-read by the bot. API keys, wallet key, RPC URLs, Ju
 
 - Live execution uses `@solana/web3.js` v1 (legacy SDK). It works, but a future version may migrate to `@solana/kit`.
 - The position monitor sends a Telegram alert after 3 consecutive failures on any polling loop.
-# tested Thu Aug  6 03:24:20 AM CST 2026
+# tested Thu Aug  6 05:35:00 AM CST 2026 — Charon Kage fork: 3 strategies (smart_money/dip_buy/akashi_zone), SSH-pushed to kaican77/charon-kage-solana, Telegram UI refresh, PnL button fix
 
