@@ -32,6 +32,11 @@ export function menuKeyboard() {
           { text: '📍 Positions', callback_data: 'menu:positions' },
           { text: '📊 PnL', callback_data: 'menu:pnl' },
         ],
+        [
+          { text: '🧪 Bot PnL', callback_data: 'menu:pnlbot' },
+          { text: '🧠 Learn', callback_data: 'menu:learn' },
+          { text: '📜 Lessons', callback_data: 'menu:lessons' },
+        ],
       ],
     },
   };

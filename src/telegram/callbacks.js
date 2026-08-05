@@ -57,6 +57,18 @@ export async function handleCallback(query) {
     const { sendPnl } = await import('./commands.js');
     return sendPnl(chatId, query);
   }
+  if (data === 'menu:pnlbot') {
+    const { sendBotPnl } = await import('./commands.js');
+    return sendBotPnl(chatId, query);
+  }
+  if (data === 'menu:learn') {
+    const { runLearning } = await import('../learning/commands.js');
+    return runLearning(chatId);
+  }
+  if (data === 'menu:lessons') {
+    const { sendLessons } = await import('../learning/commands.js');
+    return sendLessons(chatId);
+  }
   if (data === 'menu:settings') return editMenuMessage(query, `${agentText()}\n\n${filtersText()}`, navKeyboard([
     [
       { text: 'Agent', callback_data: 'menu:agent' },

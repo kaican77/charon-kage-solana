@@ -81,6 +81,7 @@ export async function handleMessage(msg) {
     return runLearning(chatId, windowArg);
   }
   if (text.startsWith('/lessons')) return sendLessons(chatId);
+  if (text.startsWith('/pnlbot')) return sendBotPnl(chatId);
   if (text.startsWith('/candidate')) {
     const mint = text.split(/\s+/)[1];
     if (!mint) return bot.sendMessage(chatId, 'ℹ️ Usage: /candidate <mint>');
@@ -245,6 +246,7 @@ export function setupTelegram() {
     { command: 'candidate', description: 'Show candidate by mint' },
     { command: 'filters', description: 'Show filters' },
     { command: 'pnl', description: 'Show saved-wallet PnL' },
+    { command: 'pnlbot', description: 'Show bot dry-run PnL summary' },
     { command: 'learn', description: 'Run manual learning report' },
     { command: 'lessons', description: 'Show active screening lessons' },
     { command: 'setfilter', description: 'Set a filter value' },
@@ -303,4 +305,50 @@ function allPositions(limit = 10) {
 
 function savedWallets() {
   return db.prepare('SELECT * FROM saved_wallets ORDER BY label').all();
+}
+
+export async function sendBotPnl(chatId, query = null) {
+  const rows = db.prepare(`
+    SELECT * FROM dry_run_positions
+    WHERE execution_mode = 'dry_run'
+    ORDER BY id DESC
+  `).all();
+  if (!rows.length) {
+    const text = '📊 <b>CHARON · BOT PnL</b>\n\n🧪 No dry-run positions yet. Open some positions first (strategy must pass filters + LLM).';
+    return query ? editMenuMessage(query, text, navKeyboard()) : bot.sendMessage(chatId, text, { parse_mode: 'HTML' });
+  }
+  const opened = rows.length;
+  const closed = rows.filter(r => r.status === 'closed');
+  const open = rows.filter(r => r.status === 'open');
+  const winners = closed.filter(r => Number(r.pnl_percent || 0) > 0);
+  const losers = closed.filter(r => Number(r.pnl_percent || 0) < 0);
+  const totalPnlPercent = closed.reduce((s, r) => s + Number(r.pnl_percent || 0), 0);
+  const totalPnlSol = closed.reduce((s, r) => s + Number(r.pnl_sol || 0), 0);
+  const winRate = closed.length ? (winners.length / closed.length) * 100 : 0;
+  const avgPnl = closed.length ? totalPnlPercent / closed.length : 0;
+  const pnlTag = fmtPnl(totalPnlPercent);
+
+  const lines = [
+    '📊 <b>CHARON · BOT PnL</b>',
+    divider(),
+    `${modeIcon(tradingMode())} Mode: <b>${escapeHtml(tradingMode().toUpperCase())}</b>`,
+    `📍 Positions: <b>${opened}</b> (🟢 open ${open.length} · 🔒 closed ${closed.length})`,
+    divider(),
+    `🎯 Win rate: <b>${fmtPct(winRate)}</b> (${winners.length}W / ${losers.length}L)`,
+    `${pnlTag.icon} Total PnL: <b>${pnlTag.text}</b> (${fmtPct(avgPnl)} avg)`,
+    `💵 Total SOL: <b>${fmtSol(totalPnlSol)}</b>`,
+    divider(),
+    '📋 <b>Recent positions</b>',
+    ...rows.slice(0, 10).map(r => {
+      const t = fmtPnl(r.pnl_percent || 0);
+      const statusIcon = r.status === 'open' ? '🟢' : '🔒';
+      return `${statusIcon} <b>${escapeHtml(r.symbol || short(r.mint))}</b> · ${t.icon} ${t.text} · ${escapeHtml(r.strategy_id || '?')}`;
+    }),
+  ].filter(Boolean);
+  const text = lines.join('\n');
+  return query ? editMenuMessage(query, text, navKeyboard()) : bot.sendMessage(chatId, text, { parse_mode: 'HTML', disable_web_page_preview: true });
+}
+
+function modeIcon(mode) {
+  return mode === 'live' ? '🔴' : mode === 'confirm' ? '🟡' : '🟢';
 }
