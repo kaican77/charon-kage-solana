@@ -205,7 +205,7 @@ export function initDb() {
   ensureColumn('dry_run_positions', 'entry_signature', 'TEXT');
   ensureColumn('dry_run_positions', 'exit_signature', 'TEXT');
   ensureColumn('dry_run_positions', 'token_amount_raw', 'TEXT');
-  ensureColumn('dry_run_positions', 'strategy_id', "TEXT DEFAULT 'sniper'");
+  ensureColumn('dry_run_positions', 'strategy_id', "TEXT DEFAULT 'dip_buy'");
   ensureColumn('dry_run_positions', 'partial_tp_done', 'INTEGER DEFAULT 0');
   ensureColumn('decision_logs', 'strategy_id', 'TEXT');
 
@@ -248,39 +248,7 @@ export function initDb() {
   const stratInsert = db.prepare('INSERT OR IGNORE INTO strategies (id, name, enabled, config_json, created_at_ms) VALUES (?, ?, ?, ?, ?)');
   const ts = Date.now();
 
-  stratInsert.run('sniper', 'Sniper', 1, JSON.stringify({
-    entry_mode: 'immediate',
-    min_source_count: 2,
-    require_fee_claim: true,
-    token_age_max_ms: 3600000,
-    min_mcap_usd: 7000,
-    max_mcap_usd: 200000,
-    min_fee_claim_sol: 0.5,
-    min_gmgn_total_fee_sol: 10,
-    min_holders: 0,
-    max_top20_holder_percent: 100,
-    min_saved_wallet_holders: 0,
-    max_ath_distance_pct: 0,
-    min_graduated_volume_usd: 0,
-    trending_min_volume_usd: 0,
-    trending_min_swaps: 0,
-    trending_max_rug_ratio: 0.3,
-    trending_max_bundler_rate: 0.5,
-    position_size_sol: 0.1,
-    max_open_positions: 3,
-    tp_percent: 50,
-    sl_percent: -25,
-    trailing_enabled: true,
-    trailing_percent: 20,
-    partial_tp: false,
-    partial_tp_at_percent: 0,
-    partial_tp_sell_percent: 0,
-    max_hold_ms: 0,
-    use_llm: true,
-    llm_min_confidence: 50,
-  }), ts);
-
-  stratInsert.run('dip_buy', 'Dip Buy', 0, JSON.stringify({
+  stratInsert.run('dip_buy', 'Dip Buy', 1, JSON.stringify({
     entry_mode: 'wait_for_dip',
     min_source_count: 1,
     require_fee_claim: false,
@@ -344,37 +312,40 @@ export function initDb() {
     llm_min_confidence: 70,
   }), ts);
 
-  stratInsert.run('degen', 'Degen', 0, JSON.stringify({
+  stratInsert.run('akashi_zone', 'Akashi Zone', 0, JSON.stringify({
     entry_mode: 'immediate',
-    min_source_count: 1,
+    min_source_count: 2,
     require_fee_claim: false,
-    token_age_max_ms: 3600000,
-    min_mcap_usd: 5000,
-    max_mcap_usd: 100000,
+    token_age_max_ms: 86400000,
+    min_mcap_usd: 15000,
+    max_mcap_usd: 750000,
     min_fee_claim_sol: 0,
     min_gmgn_total_fee_sol: 0,
-    min_holders: 0,
-    max_top20_holder_percent: 100,
+    min_holders: 500,
+    max_top20_holder_percent: 60,
     min_saved_wallet_holders: 0,
     max_ath_distance_pct: 0,
     min_graduated_volume_usd: 0,
-    trending_min_volume_usd: 0,
-    trending_min_swaps: 0,
-    trending_max_rug_ratio: 0.5,
-    trending_max_bundler_rate: 0.7,
-    position_size_sol: 0.05,
-    max_open_positions: 5,
-    tp_percent: 30,
-    sl_percent: -15,
+    trending_min_volume_usd: 3000,
+    trending_min_swaps: 50,
+    trending_max_rug_ratio: 0.25,
+    trending_max_bundler_rate: 0.4,
+    position_size_sol: 0.08,
+    max_open_positions: 4,
+    tp_percent: 75,
+    sl_percent: -30,
     trailing_enabled: true,
-    trailing_percent: 10,
-    partial_tp: false,
-    partial_tp_at_percent: 0,
-    partial_tp_sell_percent: 0,
+    trailing_percent: 25,
+    partial_tp: true,
+    partial_tp_at_percent: 50,
+    partial_tp_sell_percent: 30,
     max_hold_ms: 0,
-    use_llm: false,
-    llm_min_confidence: 0,
+    use_llm: true,
+    llm_min_confidence: 65,
   }), ts);
+
+  // Migration: remove retired strategies from existing DBs
+  db.prepare("DELETE FROM strategies WHERE id IN ('sniper', 'degen')").run();
 }
 
 export function ensureColumn(table, column, ddl) {
