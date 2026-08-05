@@ -89,3 +89,20 @@ function defaultStrategy() {
     max_hold_ms: 0, use_llm: true, llm_min_confidence: 60,
   };
 }
+
+// Resolve live TP/SL/trailing for a position from its strategy config.
+// Falls back to the position's own snapshot if strategy is missing.
+// This makes inline strategy edits apply to all open positions automatically.
+export function positionTpSl(position) {
+  const strat = position?.strategy_id ? strategyById(position.strategy_id) : null;
+  const tp = strat?.tp_percent ?? position?.tp_percent ?? 50;
+  const sl = strat?.sl_percent ?? position?.sl_percent ?? -25;
+  const trailingEnabled = strat?.trailing_enabled ?? Boolean(position?.trailing_enabled);
+  const trailingPercent = strat?.trailing_percent ?? position?.trailing_percent ?? 20;
+  return {
+    tp_percent: Number(tp),
+    sl_percent: Number(sl),
+    trailing_enabled: trailingEnabled ? 1 : 0,
+    trailing_percent: Number(trailingPercent),
+  };
+}

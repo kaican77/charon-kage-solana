@@ -1,4 +1,5 @@
 import { escapeHtml, fmtPct, fmtPnl, fmtSol, fmtUsd, short, gmgnLink, txLink, accountLink, divider, lightDivider, progressBar } from '../format.js';
+import { positionTpSl } from '../db/settings.js';
 
 const ROUTE_ICONS = {
   fees: '💸',
@@ -147,6 +148,7 @@ export function formatPosition(position) {
       ? (Number(position.high_water_mcap) / Number(position.entry_mcap) - 1) * 100
       : 0;
   const pnlTag = fmtPnl(pnl);
+  const tpSl = positionTpSl(position);
   return [
     `📍 <b>${escapeHtml(position.symbol || short(position.mint))}</b> #${position.id}`,
     divider(),
@@ -155,7 +157,7 @@ export function formatPosition(position) {
     position.entry_signature ? `➡️ Entry TX: <a href="${txLink(position.entry_signature)}">${short(position.entry_signature)}</a>` : null,
     `💰 Entry mcap: ${fmtUsd(position.entry_mcap)} · ⛰ High: ${fmtUsd(position.high_water_mcap)}`,
     `💵 Size: ${fmtSol(position.size_sol)} SOL · ${pnlTag.icon} PnL: <b>${pnlTag.text}</b>`,
-    `🎯 TP: ${fmtPct(position.tp_percent)} · 🛑 SL: ${fmtPct(position.sl_percent)} · 📉 Trail: ${position.trailing_enabled ? `${fmtPct(position.trailing_percent)}` : 'off'}`,
+    `🎯 TP: ${fmtPct(tpSl.tp_percent)} · 🛑 SL: ${fmtPct(tpSl.sl_percent)} · 📉 Trail: ${tpSl.trailing_enabled ? `${fmtPct(tpSl.trailing_percent)}` : 'off'}`,
     position.exit_reason ? `🚪 Exit: ${escapeHtml(position.exit_reason)} at ${fmtUsd(position.exit_mcap)} (${fmtPct(position.pnl_percent)})` : null,
     position.exit_signature ? `⬅️ Exit TX: <a href="${txLink(position.exit_signature)}">${short(position.exit_signature)}</a>` : null,
   ].filter(Boolean).join('\n');

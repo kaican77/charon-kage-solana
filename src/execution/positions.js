@@ -1,5 +1,5 @@
 import { now, json } from '../utils.js';
-import { numSetting, boolSetting, strategyById } from '../db/settings.js';
+import { numSetting, boolSetting, strategyById, positionTpSl } from '../db/settings.js';
 import { db } from '../db/connection.js';
 import { firstPositiveNumber, marketCapFromGmgn, tokenPriceFromGmgn } from '../utils.js';
 import { fetchGmgnTokenInfo } from '../enrichment/gmgn.js';
@@ -122,11 +122,12 @@ export async function refreshPosition(position, { autoExit = true, jupiterPnl = 
     pnlPercent = Number(jupiterPnl.totalPnlPercentageNative);
     pnlSol = Number.isFinite(Number(jupiterPnl.totalPnlNative)) ? Number(jupiterPnl.totalPnlNative) : pnlSol;
   }
-  const tpHit = pnlPercent >= Number(position.tp_percent);
-  const slHit = pnlPercent <= Number(position.sl_percent);
-  const trailingArmed = position.trailing_armed || (position.trailing_enabled && tpHit);
+  const tpSl = positionTpSl(position);
+  const tpHit = pnlPercent >= Number(tpSl.tp_percent);
+  const slHit = pnlPercent <= Number(tpSl.sl_percent);
+  const trailingArmed = position.trailing_armed || (tpSl.trailing_enabled && tpHit);
   const trailDrop = highWaterMcap > 0 ? (Number(mcap) / highWaterMcap - 1) * 100 : 0;
-  const trailingHit = trailingArmed && position.trailing_enabled && trailDrop <= -Math.abs(Number(position.trailing_percent));
+  const trailingHit = trailingArmed && tpSl.trailing_enabled && trailDrop <= -Math.abs(Number(tpSl.trailing_percent));
   let exitReason = null;
   let closed = false;
 
@@ -164,7 +165,7 @@ export async function refreshPosition(position, { autoExit = true, jupiterPnl = 
   // Standard exit checks
   if (!exitReason) {
     if (slHit) exitReason = 'SL';
-    else if (tpHit && !position.trailing_enabled) exitReason = 'TP';
+    else if (tpHit && !tpSl.trailing_enabled) exitReason = 'TP';
     else if (trailingHit) exitReason = 'TRAILING_TP';
   }
 
