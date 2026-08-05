@@ -1,4 +1,4 @@
-import { escapeHtml, fmtPct, fmtSol, fmtUsd, short } from '../format.js';
+import { escapeHtml, fmtPct, fmtSol, fmtUsd, short, divider, lightDivider } from '../format.js';
 import { numSetting, boolSetting, setting, activeStrategy, allStrategies } from '../db/settings.js';
 import { openPositionCount, tradingMode, allPositions } from '../db/positions.js';
 import { savedWallets } from '../enrichment/wallets.js';
@@ -6,19 +6,31 @@ import { gmgnStatusText } from '../enrichment/gmgn.js';
 import { formatPosition } from './format.js';
 import { ENABLE_LLM, LLM_API_KEY } from '../config.js';
 
+const STRAT_ICONS = {
+  dip_buy: '📉',
+  smart_money: '🧠',
+  akashi_zone: '⚡',
+};
+
+const STRAT_EMOJI = {
+  immediate: '⚡',
+  wait_for_dip: '📉',
+  after_confirmation: '🧠',
+};
+
 export function menuKeyboard() {
   return {
     reply_markup: {
       inline_keyboard: [
         [
-          { text: 'Strategy', callback_data: 'menu:strategy' },
-          { text: 'Agent', callback_data: 'menu:agent' },
-          { text: 'Filters', callback_data: 'menu:filters' },
+          { text: '🎯 Strategy', callback_data: 'menu:strategy' },
+          { text: '🤖 Agent', callback_data: 'menu:agent' },
+          { text: '⚙️ Filters', callback_data: 'menu:filters' },
         ],
         [
-          { text: 'Wallets', callback_data: 'menu:wallets' },
-          { text: 'Positions', callback_data: 'menu:positions' },
-          { text: 'PnL', callback_data: 'menu:pnl' },
+          { text: '👛 Wallets', callback_data: 'menu:wallets' },
+          { text: '📍 Positions', callback_data: 'menu:positions' },
+          { text: '📊 PnL', callback_data: 'menu:pnl' },
         ],
       ],
     },
@@ -28,25 +40,26 @@ export function menuKeyboard() {
 export function filtersText() {
   const strat = activeStrategy();
   return [
-    `⚙️ <b>Charon Filters</b> (${escapeHtml(strat.name)})`,
-    `Min claim fee: ${fmtSol(strat.min_fee_claim_sol)} SOL`,
-    `Min mcap: ${fmtUsd(strat.min_mcap_usd)}`,
-    `Max mcap: ${strat.max_mcap_usd > 0 ? fmtUsd(strat.max_mcap_usd) : 'off'}`,
-    `Min trading fees: ${fmtSol(strat.min_gmgn_total_fee_sol)} SOL`,
-    `Min grad volume: ${fmtUsd(strat.min_graduated_volume_usd)}`,
-    `Min holders: ${strat.min_holders || 'off'}`,
-    `Max holder: ${strat.max_top20_holder_percent < 100 ? fmtPct(strat.max_top20_holder_percent) : 'off'}`,
-    `Min saved holders: ${strat.min_saved_wallet_holders || 'off'}`,
-    strat.max_ath_distance_pct < 0 ? `Max ATH distance: ${strat.max_ath_distance_pct}%` : null,
-    '',
-    `Min sources: ${strat.min_source_count}`,
-    `Fee required: ${strat.require_fee_claim ? 'yes' : 'no'}`,
-    '',
-    `Trending: <b>${boolSetting('trending_enabled', true) ? 'on' : 'off'}</b> · Source: <b>${escapeHtml(setting('trending_source', 'jupiter'))}</b>`,
-    `GMGN status: token-info ${escapeHtml(gmgnStatusText('token'))} · trending ${escapeHtml(gmgnStatusText('trending'))}`,
-    `Trending interval: ${escapeHtml(setting('trending_interval', '5m'))} · Limit: ${numSetting('trending_limit', 100)}`,
-    `Min trend volume: ${fmtUsd(strat.trending_min_volume_usd)} · Min swaps: ${strat.trending_min_swaps}`,
-    `Max trend rug: ${fmtPct(strat.trending_max_rug_ratio * 100)} · Max bundler: ${fmtPct(strat.trending_max_bundler_rate * 100)}`,
+    `⚙️ <b>CHARON · FILTERS</b> (${escapeHtml(strat.name)})`,
+    divider(),
+    `💸 Min claim fee: ${fmtSol(strat.min_fee_claim_sol)} SOL`,
+    `💰 Min mcap: ${fmtUsd(strat.min_mcap_usd)}`,
+    `💰 Max mcap: ${strat.max_mcap_usd > 0 ? fmtUsd(strat.max_mcap_usd) : 'off'}`,
+    `💸 Min trading fees: ${fmtSol(strat.min_gmgn_total_fee_sol)} SOL`,
+    `🎓 Min grad volume: ${fmtUsd(strat.min_graduated_volume_usd)}`,
+    `👥 Min holders: ${strat.min_holders || 'off'}`,
+    `🔝 Max holder: ${strat.max_top20_holder_percent < 100 ? fmtPct(strat.max_top20_holder_percent) : 'off'}`,
+    `👛 Min saved holders: ${strat.min_saved_wallet_holders || 'off'}`,
+    strat.max_ath_distance_pct < 0 ? `⛰ Max ATH distance: ${strat.max_ath_distance_pct}%` : null,
+    lightDivider(),
+    `🔢 Min sources: ${strat.min_source_count}`,
+    `💱 Fee required: ${strat.require_fee_claim ? '✅ yes' : '❌ no'}`,
+    lightDivider(),
+    `📈 Trending: <b>${boolSetting('trending_enabled', true) ? '🟢 on' : '🔴 off'}</b> · 📡 Source: <b>${escapeHtml(setting('trending_source', 'jupiter'))}</b>`,
+    `🛰 GMGN status: token-info ${escapeHtml(gmgnStatusText('token'))} · trending ${escapeHtml(gmgnStatusText('trending'))}`,
+    `⏱ Trending interval: ${escapeHtml(setting('trending_interval', '5m'))} · 📋 Limit: ${numSetting('trending_limit', 100)}`,
+    `📊 Min trend volume: ${fmtUsd(strat.trending_min_volume_usd)} · 🔁 Min swaps: ${strat.trending_min_swaps}`,
+    `🛡 Max trend rug: ${fmtPct(strat.trending_max_rug_ratio * 100)} · 📦 Max bundler: ${fmtPct(strat.trending_max_bundler_rate * 100)}`,
   ].filter(Boolean).join('\n');
 }
 
@@ -96,18 +109,18 @@ export function filtersKeyboard() {
   return {
     reply_markup: {
       inline_keyboard: [
-        [{ text: 'Configure in Strategy', callback_data: 'menu:strategy' }],
+        [{ text: '⚙️ Configure in Strategy', callback_data: 'menu:strategy' }],
         [
-          { text: 'Trend On/Off', callback_data: 'toggle:trending_enabled' },
-          { text: 'Use Jupiter', callback_data: 'set:trending_source:jupiter' },
-          { text: 'Use GMGN', callback_data: 'set:trending_source:gmgn' },
+          { text: '🟢 Trend On/Off', callback_data: 'toggle:trending_enabled' },
+          { text: '📡 Use Jupiter', callback_data: 'set:trending_source:jupiter' },
+          { text: '🛰 Use GMGN', callback_data: 'set:trending_source:gmgn' },
         ],
         [
-          { text: 'Trend 5m', callback_data: 'set:trending_interval:5m' },
-          { text: 'Trend 1h', callback_data: 'set:trending_interval:1h' },
-          { text: 'Trend 6h', callback_data: 'set:trending_interval:6h' },
+          { text: '⏱ Trend 5m', callback_data: 'set:trending_interval:5m' },
+          { text: '⏱ Trend 1h', callback_data: 'set:trending_interval:1h' },
+          { text: '⏱ Trend 6h', callback_data: 'set:trending_interval:6h' },
         ],
-        [{ text: 'Back', callback_data: 'menu:main' }],
+        [{ text: '⬅️ Back', callback_data: 'menu:main' }],
       ],
     },
   };
@@ -115,19 +128,22 @@ export function filtersKeyboard() {
 
 export function agentText() {
   const strat = activeStrategy();
+  const mode = tradingMode();
+  const modeIcon = mode === 'live' ? '🔴' : mode === 'confirm' ? '🟡' : '🟢';
   return [
-    '🛶 <b>Charon Agent</b>',
-    `Strategy: <b>${escapeHtml(strat.name)}</b>`,
-    `Agent: <b>${boolSetting('agent_enabled', true) ? 'on' : 'off'}</b>`,
-    `Mode: <b>${escapeHtml(tradingMode())}</b>`,
-    `LLM: <b>${strat.use_llm && ENABLE_LLM && LLM_API_KEY ? 'configured' : 'disabled'}</b>`,
-    `Confidence: ${fmtPct(strat.llm_min_confidence || numSetting('llm_min_confidence', 75))}`,
-    `Open positions: ${openPositionCount()}/${strat.max_open_positions || 'unlimited'}`,
-    `Batch candidates: ${numSetting('llm_candidate_pick_count', 10)}`,
-    `Candidate freshness: ${Math.round(numSetting('llm_candidate_max_age_ms', 600000) / 1000)}s`,
-    `Size: ${fmtSol(strat.position_size_sol)} SOL`,
-    `TP/SL: ${fmtPct(strat.tp_percent)} / ${fmtPct(strat.sl_percent)}`,
-    `Trailing: ${strat.trailing_enabled ? fmtPct(strat.trailing_percent) : 'off'}`,
+    '🤖 <b>CHARON · AGENT</b>',
+    divider(),
+    `🎯 Strategy: <b>${escapeHtml(strat.name)}</b>`,
+    `🟢 Agent: <b>${boolSetting('agent_enabled', true) ? 'on' : 'off'}</b>`,
+    `${modeIcon} Mode: <b>${escapeHtml(mode)}</b>`,
+    `🧠 LLM: <b>${strat.use_llm && ENABLE_LLM && LLM_API_KEY ? '✅ configured' : '❌ disabled'}</b>`,
+    `🎯 Confidence: ${fmtPct(strat.llm_min_confidence || numSetting('llm_min_confidence', 75))}`,
+    `📍 Open positions: ${openPositionCount()}/${strat.max_open_positions || 'unlimited'}`,
+    `📦 Batch candidates: ${numSetting('llm_candidate_pick_count', 10)}`,
+    `⏱ Candidate freshness: ${Math.round(numSetting('llm_candidate_max_age_ms', 600000) / 1000)}s`,
+    `💵 Size: ${fmtSol(strat.position_size_sol)} SOL`,
+    `🎯 TP/SL: ${fmtPct(strat.tp_percent)} / ${fmtPct(strat.sl_percent)}`,
+    `📉 Trailing: ${strat.trailing_enabled ? fmtPct(strat.trailing_percent) : 'off'}`,
   ].join('\n');
 }
 
@@ -135,16 +151,16 @@ export function agentKeyboard() {
   return {
     reply_markup: {
       inline_keyboard: [
-        [{ text: 'Toggle Agent', callback_data: 'toggle:agent' }],
+        [{ text: '🟢 Toggle Agent', callback_data: 'toggle:agent' }],
         [
-          { text: 'Dry Run', callback_data: 'set:trading_mode:dry_run' },
-          { text: 'Confirm', callback_data: 'set:trading_mode:confirm' },
-          { text: 'Live', callback_data: 'set:trading_mode:live' },
+          { text: '🟢 Dry Run', callback_data: 'set:trading_mode:dry_run' },
+          { text: '🟡 Confirm', callback_data: 'set:trading_mode:confirm' },
+          { text: '🔴 Live', callback_data: 'set:trading_mode:live' },
         ],
         [
-          { text: 'Max Pos 1', callback_data: 'set:max_open_positions:1' },
-          { text: 'Max Pos 3', callback_data: 'set:max_open_positions:3' },
-          { text: 'Max Pos 5', callback_data: 'set:max_open_positions:5' },
+          { text: 'Pos 1', callback_data: 'set:max_open_positions:1' },
+          { text: 'Pos 3', callback_data: 'set:max_open_positions:3' },
+          { text: 'Pos 5', callback_data: 'set:max_open_positions:5' },
         ],
         [
           { text: 'Batch 5', callback_data: 'set:llm_candidate_pick_count:5' },
@@ -155,7 +171,7 @@ export function agentKeyboard() {
           { text: 'Fresh 10m', callback_data: 'set:llm_candidate_max_age_ms:600000' },
           { text: 'Fresh 20m', callback_data: 'set:llm_candidate_max_age_ms:1200000' },
         ],
-        [{ text: 'Back', callback_data: 'menu:main' }],
+        [{ text: '⬅️ Back', callback_data: 'menu:main' }],
       ],
     },
   };
@@ -173,21 +189,32 @@ export function navKeyboard(rows = []) {
 }
 
 export function mainMenuText() {
-  return `🛶 <b>Charon</b>\nDry-run trench agent online.`;
+  const strat = activeStrategy();
+  const mode = tradingMode();
+  const modeIcon = mode === 'live' ? '🔴' : mode === 'confirm' ? '🟡' : '🟢';
+  return [
+    '🛶 <b>CHARON</b>',
+    divider(),
+    `${modeIcon} <b>${escapeHtml(mode.toUpperCase())}</b> · 🤖 Agent: <b>${boolSetting('agent_enabled', true) ? 'on' : 'off'}</b>`,
+    `🎯 Strategy: <b>${escapeHtml(strat.name)}</b>`,
+    `📍 Positions: ${openPositionCount()}/${strat.max_open_positions || '∞'}`,
+    '',
+    'Pick a menu below 👇',
+  ].join('\n');
 }
 
 export function walletsText() {
   const rows = savedWallets();
   const body = rows.length
-    ? rows.map(row => `• <b>${escapeHtml(row.label)}</b>: <code>${escapeHtml(row.address)}</code>`).join('\n')
-    : 'No saved wallets. Use /walletadd &lt;label&gt; &lt;address&gt;';
-  return `👛 <b>Saved Wallets</b>\n\n${body}`;
+    ? rows.map(row => `👛 <b>${escapeHtml(row.label)}</b>\n   <code>${escapeHtml(row.address)}</code>`).join('\n\n')
+    : '👛 No saved wallets. Use /walletadd &lt;label&gt; &lt;address&gt;';
+  return `👛 <b>CHARON · SAVED WALLETS</b>\n\n${body}`;
 }
 
 export function positionsText() {
   const rows = allPositions(12);
-  const text = rows.length ? rows.map(formatPosition).join('\n\n') : 'No dry-run positions yet.';
-  return `📍 <b>Positions</b>\n\n${text}`;
+  const text = rows.length ? rows.map(formatPosition).join('\n\n') : '📍 No dry-run positions yet.';
+  return `📍 <b>CHARON · POSITIONS</b>\n\n${text}`;
 }
 
 export function strategyMenuText() {
@@ -195,23 +222,23 @@ export function strategyMenuText() {
   const all = allStrategies();
   const entryIcons = { immediate: '⚡', wait_for_dip: '📉', after_confirmation: '🧠' };
   return [
-    '🎯 <b>Strategy</b>',
-    '',
-    `Active: <b>${escapeHtml(strat.name)}</b>`,
-    `Entry: ${entryIcons[strat.entry_mode] || '?'} ${strat.entry_mode}`,
-    `Min sources: ${strat.min_source_count}`,
-    `Fee required: ${strat.require_fee_claim ? 'yes' : 'no'}`,
-    `Size: ${fmtSol(strat.position_size_sol)} SOL`,
-    `TP/SL: ${fmtPct(strat.tp_percent)} / ${fmtPct(strat.sl_percent)}`,
-    `Trailing: ${strat.trailing_enabled ? fmtPct(strat.trailing_percent) : 'off'}`,
-    `Max positions: ${strat.max_open_positions}`,
-    strat.min_holders > 0 ? `Min holders: ${strat.min_holders}` : null,
-    strat.max_ath_distance_pct < 0 ? `Max ATH distance: ${strat.max_ath_distance_pct}%` : null,
-    strat.partial_tp ? `Partial TP: ${strat.partial_tp_sell_percent}% at ${fmtPct(strat.partial_tp_at_percent)}` : null,
-    strat.max_hold_ms > 0 ? `Max hold: ${Math.round(strat.max_hold_ms / 60000)}m` : null,
-    strat.use_llm ? `LLM: yes (min ${strat.llm_min_confidence}%)` : 'LLM: no (rule-based)',
-    '',
-    ...all.map(s => `${s.enabled ? '▶' : '○'} ${s.name}`),
+    '🎯 <b>CHARON · STRATEGY</b>',
+    divider(),
+    `▶ Active: <b>${STRAT_ICONS[strat.id] || '🎯'} ${escapeHtml(strat.name)}</b>`,
+    `${entryIcons[strat.entry_mode] || '?'} Entry: ${strat.entry_mode}`,
+    `🔢 Min sources: ${strat.min_source_count}`,
+    `💱 Fee required: ${strat.require_fee_claim ? '✅ yes' : '❌ no'}`,
+    `💵 Size: ${fmtSol(strat.position_size_sol)} SOL`,
+    `🎯 TP/SL: ${fmtPct(strat.tp_percent)} / ${fmtPct(strat.sl_percent)}`,
+    `📉 Trailing: ${strat.trailing_enabled ? fmtPct(strat.trailing_percent) : 'off'}`,
+    `📍 Max positions: ${strat.max_open_positions}`,
+    strat.min_holders > 0 ? `👥 Min holders: ${strat.min_holders}` : null,
+    strat.max_ath_distance_pct < 0 ? `⛰ Max ATH distance: ${strat.max_ath_distance_pct}%` : null,
+    strat.partial_tp ? `🪓 Partial TP: ${strat.partial_tp_sell_percent}% at ${fmtPct(strat.partial_tp_at_percent)}` : null,
+    strat.max_hold_ms > 0 ? `⏱ Max hold: ${Math.round(strat.max_hold_ms / 60000)}m` : null,
+    strat.use_llm ? `🧠 LLM: ✅ yes (min ${strat.llm_min_confidence}%)` : '🧠 LLM: ❌ no (rule-based)',
+    divider(),
+    ...all.map(s => `${s.enabled ? '▶' : '○'} ${STRAT_ICONS[s.id] || '🎯'} ${s.name}`),
   ].filter(Boolean).join('\n');
 }
 
@@ -219,7 +246,7 @@ export function strategyKeyboard() {
   const strat = activeStrategy();
   const all = allStrategies();
   const selector = all.map(s => [{
-    text: `${s.enabled ? '▶ ' : ''}${s.name}`,
+    text: `${s.enabled ? '▶ ' : ''}${STRAT_ICONS[s.id] || '🎯'} ${s.name}`,
     callback_data: `strategy:select:${s.id}`,
   }]);
   const config = [
@@ -282,11 +309,11 @@ export function strategyKeyboard() {
   return {
     reply_markup: {
       inline_keyboard: [
-        [{ text: '── Select Strategy ──', callback_data: 'noop' }],
+        [{ text: '🎯 ── Select Strategy ──', callback_data: 'noop' }],
         ...selector,
-        [{ text: '── Configure ──', callback_data: 'noop' }],
+        [{ text: '⚙️ ── Configure ──', callback_data: 'noop' }],
         ...config,
-        [{ text: 'Back', callback_data: 'menu:main' }],
+        [{ text: '⬅️ Back', callback_data: 'menu:main' }],
       ],
     },
   };
@@ -298,12 +325,12 @@ export function candidateButtons(candidateId, decision = null) {
     return {
       reply_markup: {
         inline_keyboard: [
-          [{ text: `Skipped: ${verdict}`, callback_data: 'noop' }],
+          [{ text: `⛔ Skipped: ${verdict}`, callback_data: 'noop' }],
           [
-            { text: 'View Candidate', callback_data: `cand:${candidateId}` },
-            { text: 'Ignore', callback_data: `ign:${candidateId}` },
+            { text: '🔍 View Candidate', callback_data: `cand:${candidateId}` },
+            { text: '🚫 Ignore', callback_data: `ign:${candidateId}` },
           ],
-          [{ text: 'Positions', callback_data: 'menu:positions' }],
+          [{ text: '📍 Positions', callback_data: 'menu:positions' }],
         ],
       },
     };
@@ -312,14 +339,14 @@ export function candidateButtons(candidateId, decision = null) {
     return {
       reply_markup: {
         inline_keyboard: [
-          [{ text: 'LLM BUY selected', callback_data: 'noop' }],
+          [{ text: '🧠 LLM BUY selected', callback_data: 'noop' }],
           [
-            { text: 'View Candidate', callback_data: `cand:${candidateId}` },
-            { text: 'Positions', callback_data: 'menu:positions' },
+            { text: '🔍 View Candidate', callback_data: `cand:${candidateId}` },
+            { text: '📍 Positions', callback_data: 'menu:positions' },
           ],
           [
-            { text: 'Set TP/SL', callback_data: `tpsl:c:${candidateId}` },
-            { text: 'Ignore', callback_data: `ign:${candidateId}` },
+            { text: '🎯 Set TP/SL', callback_data: `tpsl:c:${candidateId}` },
+            { text: '🚫 Ignore', callback_data: `ign:${candidateId}` },
           ],
         ],
       },
@@ -329,14 +356,14 @@ export function candidateButtons(candidateId, decision = null) {
     reply_markup: {
       inline_keyboard: [
         [
-          { text: 'View Candidate', callback_data: `cand:${candidateId}` },
-          { text: 'Dry Buy', callback_data: `buy:${candidateId}` },
+          { text: '🔍 View Candidate', callback_data: `cand:${candidateId}` },
+          { text: '🧪 Dry Buy', callback_data: `buy:${candidateId}` },
         ],
         [
-          { text: 'Set TP/SL', callback_data: `tpsl:c:${candidateId}` },
-          { text: 'Ignore', callback_data: `ign:${candidateId}` },
+          { text: '🎯 Set TP/SL', callback_data: `tpsl:c:${candidateId}` },
+          { text: '🚫 Ignore', callback_data: `ign:${candidateId}` },
         ],
-        [{ text: 'Positions', callback_data: 'menu:positions' }],
+        [{ text: '📍 Positions', callback_data: 'menu:positions' }],
       ],
     },
   };
@@ -346,10 +373,10 @@ export function batchRevealButtons(batchId, rows, decision, triggerCandidateId =
   const selectedId = Number(decision.selected_candidate_id || 0);
   const triggerId = Number(triggerCandidateId || 0);
   const keyboard = [];
-  if (selectedId) keyboard.push([{ text: 'Reveal Pick', callback_data: `cand:${selectedId}` }]);
-  keyboard.push([{ text: 'Reveal Batch', callback_data: `batch:${batchId}` }]);
-  if (triggerId && triggerId !== selectedId) keyboard.push([{ text: 'Reveal Trigger', callback_data: `cand:${triggerId}` }]);
-  keyboard.push([{ text: 'Positions', callback_data: 'menu:positions' }]);
+  if (selectedId) keyboard.push([{ text: '🔍 Reveal Pick', callback_data: `cand:${selectedId}` }]);
+  keyboard.push([{ text: '📦 Reveal Batch', callback_data: `batch:${batchId}` }]);
+  if (triggerId && triggerId !== selectedId) keyboard.push([{ text: '⚡ Reveal Trigger', callback_data: `cand:${triggerId}` }]);
+  keyboard.push([{ text: '📍 Positions', callback_data: 'menu:positions' }]);
   return { reply_markup: { inline_keyboard: keyboard } };
 }
 
@@ -358,18 +385,18 @@ export function positionButtons(positionId) {
     reply_markup: {
       inline_keyboard: [
         [
-          { text: 'Dry Sell', callback_data: `sell:${positionId}` },
-          { text: 'Refresh', callback_data: `pos:${positionId}` },
+          { text: '🧪 Dry Sell', callback_data: `sell:${positionId}` },
+          { text: '🔄 Refresh', callback_data: `pos:${positionId}` },
         ],
         [
-          { text: 'TP +25%', callback_data: `tp:${positionId}:25` },
-          { text: 'TP +50%', callback_data: `tp:${positionId}:50` },
+          { text: '🎯 TP +25%', callback_data: `tp:${positionId}:25` },
+          { text: '🎯 TP +50%', callback_data: `tp:${positionId}:50` },
         ],
         [
-          { text: 'SL -15%', callback_data: `sl:${positionId}:-15` },
-          { text: 'SL -25%', callback_data: `sl:${positionId}:-25` },
+          { text: '🛑 SL -15%', callback_data: `sl:${positionId}:-15` },
+          { text: '🛑 SL -25%', callback_data: `sl:${positionId}:-25` },
         ],
-        [{ text: 'Trail On/Off', callback_data: `trail:${positionId}` }],
+        [{ text: '📉 Trail On/Off', callback_data: `trail:${positionId}` }],
       ],
     },
   };
@@ -380,10 +407,10 @@ export function intentButtons(intentId) {
     reply_markup: {
       inline_keyboard: [
         [
-          { text: 'Confirm Buy', callback_data: `intent:${intentId}:confirm` },
-          { text: 'Reject', callback_data: `intent:${intentId}:reject` },
+          { text: '✅ Confirm Buy', callback_data: `intent:${intentId}:confirm` },
+          { text: '🚫 Reject', callback_data: `intent:${intentId}:reject` },
         ],
-        [{ text: 'Positions', callback_data: 'menu:positions' }],
+        [{ text: '📍 Positions', callback_data: 'menu:positions' }],
       ],
     },
   };
@@ -394,18 +421,18 @@ export async function sendTpSlDefaults(chatId, query = null) {
     reply_markup: {
       inline_keyboard: [
         [
-          { text: 'Default TP +25%', callback_data: 'set:default_tp_percent:25' },
-          { text: 'Default TP +50%', callback_data: 'set:default_tp_percent:50' },
+          { text: '🎯 Default TP +25%', callback_data: 'set:default_tp_percent:25' },
+          { text: '🎯 Default TP +50%', callback_data: 'set:default_tp_percent:50' },
         ],
         [
-          { text: 'Default SL -15%', callback_data: 'set:default_sl_percent:-15' },
-          { text: 'Default SL -25%', callback_data: 'set:default_sl_percent:-25' },
+          { text: '🛑 Default SL -15%', callback_data: 'set:default_sl_percent:-15' },
+          { text: '🛑 Default SL -25%', callback_data: 'set:default_sl_percent:-25' },
         ],
         [
-          { text: 'Trail On', callback_data: 'set:default_trailing_enabled:true' },
-          { text: 'Trail Off', callback_data: 'set:default_trailing_enabled:false' },
+          { text: '📉 Trail On', callback_data: 'set:default_trailing_enabled:true' },
+          { text: '📉 Trail Off', callback_data: 'set:default_trailing_enabled:false' },
         ],
-        [{ text: 'Back', callback_data: 'menu:main' }],
+        [{ text: '⬅️ Back', callback_data: 'menu:main' }],
       ],
     },
   };

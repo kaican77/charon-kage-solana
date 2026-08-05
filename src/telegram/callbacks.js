@@ -89,13 +89,13 @@ export async function handleCallback(query) {
   if (kind === 'cand') return sendCandidate(chatId, Number(id));
   if (kind === 'ign') {
     updateCandidateStatus(Number(id), 'ignored');
-    return bot.sendMessage(chatId, 'Ignored candidate.');
+    return bot.sendMessage(chatId, '🚫 Ignored candidate.');
   }
   if (kind === 'buy') {
     const row = candidateById(Number(id));
-    if (!row) return bot.sendMessage(chatId, 'Candidate not found.');
+    if (!row) return bot.sendMessage(chatId, '🔍 Candidate not found.');
     if (!canOpenMorePositions()) {
-      return bot.sendMessage(chatId, `Max open positions reached (${openPositionCount()}/${numSetting('max_open_positions', 3)}). Close one first or raise the limit.`);
+      return bot.sendMessage(chatId, `⚠️ Max open positions reached (${openPositionCount()}/${numSetting('max_open_positions', 3)}). Close one first or raise the limit.`);
     }
     const candidate = row.candidate;
     const decision = { verdict: 'BUY', confidence: 100, reason: 'Manual dry buy', risks: [], suggested_tp_percent: numSetting('default_tp_percent', 50), suggested_sl_percent: numSetting('default_sl_percent', -25) };
@@ -249,7 +249,7 @@ async function updateSettingFromButton(query, key, value) {
     'default_trailing_enabled',
     'default_trailing_percent',
   ]);
-  if (!valid.has(key) || value == null) return bot.sendMessage(chatId, 'Unknown setting.');
+  if (!valid.has(key) || value == null) return bot.sendMessage(chatId, '⚠️ Unknown setting.');
   setSetting(key, value);
   const text = key.startsWith('default_') || key === 'dry_run_buy_sol' || key === 'trading_mode' || key === 'llm_min_confidence' || key === 'llm_candidate_pick_count' || key === 'llm_candidate_max_age_ms' || key === 'max_open_positions'
     ? agentText()

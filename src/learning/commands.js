@@ -29,5 +29,5 @@ export async function sendLessons(chatId) {
   const text = rows.length
     ? rows.map((row, index) => `${index + 1}. ${escapeHtml(row.lesson)}`).join('\n')
     : 'No active lessons yet. Run /learn 12h after some dry-run exits.';
-  return bot.sendMessage(chatId, `🧠 <b>Active Lessons</b>\n\n${text}`, { parse_mode: 'HTML' });
+  return bot.sendMessage(chatId, `🧠 <b>CHARON · ACTIVE LESSONS</b>\n\n${text}`, { parse_mode: 'HTML' });
 }

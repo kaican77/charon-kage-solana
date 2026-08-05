@@ -2,7 +2,7 @@ import { bot } from './bot.js';
 import { TELEGRAM_CHAT_ID, TELEGRAM_TOPIC_ID } from '../config.js';
 import { now, json } from '../utils.js';
 import { db } from '../db/connection.js';
-import { escapeHtml, fmtPct, fmtSol, fmtUsd, short, gmgnLink } from '../format.js';
+import { escapeHtml, fmtPct, fmtSol, fmtUsd, short, gmgnLink, divider } from '../format.js';
 import { numSetting } from '../db/settings.js';
 import { candidateSummary, compactCandidateLine, batchRevealSummary, formatPosition } from './format.js';
 import { candidateButtons, batchRevealButtons, positionButtons, intentButtons } from './menus.js';
@@ -45,20 +45,20 @@ export async function sendBatchReveal(batchId, rows, decision, triggerCandidateI
 
 export async function sendBatch(chatId, batchId) {
   const batch = batchById(batchId);
-  if (!batch) return bot.sendMessage(chatId, 'Batch not found.');
+  if (!batch) return bot.sendMessage(chatId, '📦 Batch not found.');
   const lines = [
-    '🧭 <b>Screening Batch</b>',
-    '',
-    `Batch: <b>#${batchId}</b> · Decision: <b>${escapeHtml(batch.verdict)}</b> ${fmtPct(batch.confidence)}`,
-    batch.reason ? `Reason: ${escapeHtml(String(batch.reason).slice(0, 500))}` : null,
-    '',
+    '🧭 <b>CHARON · SCREENING BATCH</b>',
+    divider(),
+    `📦 Batch: <b>#${batchId}</b> · 🤖 Decision: <b>${escapeHtml(batch.verdict)}</b> ${fmtPct(batch.confidence)}`,
+    batch.reason ? `💭 ${escapeHtml(String(batch.reason).slice(0, 500))}` : null,
+    divider(),
     ...batch.rows.map((row, index) => compactCandidateLine(row, index + 1)),
   ];
   const keyboard = batch.rows.slice(0, 10).map((row, index) => ([{
     text: `${index + 1}. ${row.candidate.token?.symbol || short(row.candidate.token?.mint || '')}`,
     callback_data: `cand:${row.id}`,
   }]));
-  keyboard.push([{ text: 'Positions', callback_data: 'menu:positions' }]);
+  keyboard.push([{ text: '📍 Positions', callback_data: 'menu:positions' }]);
   return bot.sendMessage(chatId, lines.filter(Boolean).join('\n'), {
     parse_mode: 'HTML',
     disable_web_page_preview: true,

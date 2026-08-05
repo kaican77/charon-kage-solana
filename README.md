@@ -209,3 +209,4 @@ SQLite/menu settings are hot-read by the bot. API keys, wallet key, RPC URLs, Ju
 - Live execution uses `@solana/web3.js` v1 (legacy SDK). It works, but a future version may migrate to `@solana/kit`.
 - The position monitor sends a Telegram alert after 3 consecutive failures on any polling loop.
 # tested Thu Aug  6 03:24:20 AM CST 2026
+
