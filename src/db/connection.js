@@ -332,17 +332,17 @@ export function initDb() {
     trending_max_rug_ratio: 0.25,
     trending_max_bundler_rate: 0.4,
     position_size_sol: 0.08,
-    max_open_positions: 10,
-    tp_percent: 75,
-    sl_percent: -30,
+    max_open_positions: 3,
+    tp_percent: 30,
+    sl_percent: -85,
     trailing_enabled: true,
-    trailing_percent: 25,
+    trailing_percent: 15,
     partial_tp: true,
-    partial_tp_at_percent: 50,
+    partial_tp_at_percent: 25,
     partial_tp_sell_percent: 30,
     max_hold_ms: 0,
     use_llm: true,
-    llm_min_confidence: 65,
+    llm_min_confidence: 70,
   }), ts);
 
   // Migration: remove retired strategies from existing DBs
