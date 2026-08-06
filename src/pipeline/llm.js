@@ -43,9 +43,14 @@ export function compactCandidateForLlm(row) {
     feeClaim: c.feeClaim,
     trending: c.trending,
     graduation: c.graduation,
-    holders: c.holders,
+    holders: c.holders
+      ? {
+          count: c.holders.count ?? (Array.isArray(c.holders) ? c.holders.length : null),
+          top20: c.holders.top20 ?? null,
+          top20Percent: c.holders.top20Percent ?? c.holders.maxHolderPercent ?? null,
+        }
+      : null,
     chart: {
-      purpose: 'ATH/range context only. Do not treat large 24h change as bullish/bearish momentum by itself.',
       currentNative: c.chart?.currentNative,
       rangeHighNative: c.chart?.rangeHighNative,
       distanceFromAthPercent: c.chart?.distanceFromAthPercent ?? c.chart?.belowRangeHighPercent,
@@ -57,7 +62,6 @@ export function compactCandidateForLlm(row) {
         distanceFromHighPercent: athWindow.belowHighPercent,
         aboveLowPercent: athWindow.aboveLowPercent,
       } : null,
-      windows: c.chart?.windows,
     },
     savedWalletExposure: c.savedWalletExposure,
     twitterNarrative: c.twitterNarrative,
