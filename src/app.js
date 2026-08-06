@@ -1,6 +1,6 @@
 import { setDefaultResultOrder } from 'node:dns';
 import { APP_NAME, SIGNAL_SERVER_URL, SIGNAL_POLL_MS, GRADUATED_POLL_MS, TRENDING_POLL_MS, POSITION_CHECK_MS, validateConfig } from './config.js';
-import { initDb } from './db/connection.js';
+import { initDb, db } from './db/connection.js';
 import { initLiveExecution } from './liveExecutor.js';
 import { setupTelegram } from './telegram/commands.js';
 import { monitorPositions } from './execution/positions.js';
@@ -11,8 +11,28 @@ import { makeFailureTracker } from './utils.js';
 setDefaultResultOrder('ipv4first');
 validateConfig();
 
+// On startup, drop screening state from previous runs so no stale candidates
+// or pending intents can trigger buys after a restart. Open positions survive.
+export function resetScreeningState() {
+  const nowMs = Date.now();
+  const maxAge = Number(process.env.LLM_CANDIDATE_MAX_AGE_MS || 10 * 60 * 1000);
+  const cutoff = nowMs - Math.max(30_000, maxAge);
+  const staleCandidates = db.prepare(`
+    DELETE FROM candidates
+    WHERE status IN ('candidate', 'watch', 'pass')
+      AND created_at_ms < ?
+  `).run(cutoff);
+  const staleIntents = db.prepare(`
+    DELETE FROM trade_intents
+    WHERE status = 'pending'
+      AND created_at_ms < ?
+  `).run(cutoff);
+  console.log(`[bot] reset screening state: removed ${staleCandidates.changes} stale candidates, ${staleIntents.changes} stale intents (fresh start)`);
+}
+
 export async function startCharon() {
   initDb();
+  resetScreeningState();
   initLiveExecution();
   setupTelegram();
 
