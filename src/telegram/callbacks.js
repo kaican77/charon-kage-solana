@@ -61,6 +61,14 @@ export async function handleCallback(query) {
     const { sendBotPnl } = await import('./commands.js');
     return sendBotPnl(chatId, query);
   }
+  if (data === 'pnl:add') {
+    const { requestBankrollInput } = await import('../telegram/input.js');
+    return requestBankrollInput(query);
+  }
+  if (data === 'pnl:reset') {
+    const { resetBotPnl } = await import('./commands.js');
+    return resetBotPnl(chatId, query);
+  }
   if (data === 'menu:learn') {
     const { runLearning } = await import('../learning/commands.js');
     return runLearning(chatId);

@@ -217,6 +217,7 @@ export function initDb() {
     llm_min_confidence: '75',
     max_open_positions: process.env.MAX_OPEN_POSITIONS || '3',
     dry_run_buy_sol: '0.1',
+    bankroll_sol: '0.5',
     default_tp_percent: '50',
     default_sl_percent: '-25',
     default_trailing_enabled: 'true',

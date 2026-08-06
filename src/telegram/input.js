@@ -1,7 +1,7 @@
 import { bot } from './bot.js';
 import { TELEGRAM_CHAT_ID } from '../config.js';
 import { now, parseNumericInput } from '../utils.js';
-import { activeStrategy, setSetting, updateStrategyConfig } from '../db/settings.js';
+import { activeStrategy, setSetting, updateStrategyConfig, bankrollSol, addBankroll } from '../db/settings.js';
 import {
   filtersText,
   filtersKeyboard,
@@ -48,6 +48,21 @@ export async function requestStrategyNumericInput(query, key) {
   );
 }
 
+export async function requestBankrollInput(query) {
+  const chatId = query.message?.chat?.id || TELEGRAM_CHAT_ID;
+  const current = bankrollSol();
+  pendingNumericInputs.set(String(chatId), {
+    type: 'bankroll',
+    at: now(),
+    messageId: query.message?.message_id || null,
+  });
+  return editMenuMessage(
+    query,
+    `💰 <b>CHARON · BANKROLL</b>\n\nCurrent: <b>${current.toFixed(4)}</b> SOL\n\nSend SOL amount to add (e.g. 0.5, 1, 2):`,
+    navKeyboard([[{ text: 'Cancel', callback_data: 'menu:pnlbot' }]]),
+  );
+}
+
 export async function consumeNumericFilterInput(chatId, text, userMessageId = null) {
   const pending = pendingNumericInputs.get(String(chatId));
   if (!pending) return false;
@@ -63,6 +78,11 @@ export async function consumeNumericFilterInput(chatId, text, userMessageId = nu
   }
   pendingNumericInputs.delete(String(chatId));
   if (userMessageId) bot.deleteMessage(chatId, userMessageId).catch(() => {});
+  if (pending.type === 'bankroll') {
+    const next = addBankroll(value);
+    await bot.sendMessage(chatId, `💰 <b>CHARON · BANKROLL</b>\n\n✅ Added <b>${value}</b> SOL\n💰 Bankroll now: <b>${next.toFixed(4)}</b> SOL`, { parse_mode: 'HTML' });
+    return true;
+  }
   if (pending.type === 'strategy') {
     const strat = activeStrategy();
     if (strat.id !== pending.strategyId) {

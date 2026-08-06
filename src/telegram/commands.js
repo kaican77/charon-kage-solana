@@ -3,7 +3,7 @@ import { TELEGRAM_CHAT_ID } from '../config.js';
 import { now, json } from '../utils.js';
 import { escapeHtml, fmtPct, fmtPnl, fmtSol, divider } from '../format.js';
 import { db } from '../db/connection.js';
-import { numSetting, boolSetting, setSetting, activeStrategy, setActiveStrategy, strategyById, updateStrategyConfig } from '../db/settings.js';
+import { numSetting, boolSetting, setSetting, activeStrategy, setActiveStrategy, strategyById, updateStrategyConfig, bankrollSol, addBankroll, resetBankroll } from '../db/settings.js';
 import { candidateById, latestCandidateByMint, updateCandidateStatus } from '../db/candidates.js';
 import { storeDecision, logDecisionEvent } from '../db/decisions.js';
 import {
@@ -84,6 +84,12 @@ export async function handleMessage(msg) {
   }
   if (text.startsWith('/lessons')) return sendLessons(chatId);
   if (text.startsWith('/pnlbot')) return sendBotPnl(chatId);
+  if (text.startsWith('/resetpnl')) return resetBotPnl(chatId);
+  if (text.startsWith('/addbankroll')) {
+    const amt = Number(text.split(/\s+/)[1]);
+    if (!Number.isFinite(amt) || amt <= 0) return bot.sendMessage(chatId, 'ℹ️ Usage: /addbankroll <amount_sol>  (e.g. /addbankroll 0.5)');
+    return addBankrollSol(chatId, amt);
+  }
   if (text.startsWith('/candidate')) {
     const mint = text.split(/\s+/)[1];
     if (!mint) return bot.sendMessage(chatId, 'ℹ️ Usage: /candidate <mint>');
@@ -249,6 +255,8 @@ export function setupTelegram() {
     { command: 'filters', description: 'Show filters' },
     { command: 'pnl', description: 'Show saved-wallet PnL' },
     { command: 'pnlbot', description: 'Show bot dry-run PnL summary' },
+    { command: 'resetpnl', description: 'Reset dry-run positions + bankroll' },
+    { command: 'addbankroll', description: 'Add SOL to bot bankroll' },
     { command: 'learn', description: 'Run manual learning report' },
     { command: 'lessons', description: 'Show active screening lessons' },
     { command: 'setfilter', description: 'Set a filter value' },
@@ -311,13 +319,10 @@ export async function sendBotPnl(chatId, query = null) {
     WHERE execution_mode = 'dry_run'
     ORDER BY id DESC
   `).all();
-  if (!rows.length) {
-    const text = '📊 <b>CHARON · BOT PnL</b>\n\n🧪 No dry-run positions yet. Open some positions first (strategy must pass filters + LLM).';
-    return query ? editMenuMessage(query, text, navKeyboard()) : bot.sendMessage(chatId, text, { parse_mode: 'HTML' });
-  }
-  const opened = rows.length;
-  const closed = rows.filter(r => r.status === 'closed');
+  const bankroll = bankrollSol();
   const open = rows.filter(r => r.status === 'open');
+  const usedSol = open.reduce((s, r) => s + Number(r.size_sol || 0), 0);
+  const closed = rows.filter(r => r.status === 'closed');
   const winners = closed.filter(r => Number(r.pnl_percent || 0) > 0);
   const losers = closed.filter(r => Number(r.pnl_percent || 0) < 0);
   const totalPnlPercent = closed.reduce((s, r) => s + Number(r.pnl_percent || 0), 0);
@@ -325,16 +330,24 @@ export async function sendBotPnl(chatId, query = null) {
   const winRate = closed.length ? (winners.length / closed.length) * 100 : 0;
   const avgPnl = closed.length ? totalPnlPercent / closed.length : 0;
   const pnlTag = fmtPnl(totalPnlPercent);
+  const totalSol = bankroll + totalPnlSol;
+  const freeSol = bankroll - usedSol;
+  const mode = tradingMode();
+  const modeIcon = mode === 'live' ? '🔴' : mode === 'confirm' ? '🟡' : '🟢';
 
   const lines = [
     '📊 <b>CHARON · BOT PnL</b>',
     divider(),
-    `${modeIcon(tradingMode())} Mode: <b>${escapeHtml(tradingMode().toUpperCase())}</b>`,
-    `📍 Positions: <b>${opened}</b> (🟢 open ${open.length} · 🔒 closed ${closed.length})`,
+    `${modeIcon} Mode: <b>${mode.toUpperCase()}</b>`,
+    `💰 Bankroll: <b>${fmtSol(bankroll)}</b> SOL`,
+    `📈 PnL: ${pnlTag.icon} <b>${fmtSol(totalPnlSol)}</b> (${fmtPct(totalPnlPercent)})`,
+    `🏦 Total: <b>${fmtSol(totalSol)}</b> SOL`,
+    divider(),
+    `📍 Positions: <b>${rows.length}</b> (🟢 open ${open.length} · 🔒 closed ${closed.length})`,
+    `💸 Used: ${fmtSol(usedSol)} · 💡 Free: ${fmtSol(freeSol)}`,
     divider(),
     `🎯 Win rate: <b>${fmtPct(winRate)}</b> (${winners.length}W / ${losers.length}L)`,
-    `${pnlTag.icon} Total PnL: <b>${pnlTag.text}</b> (${fmtPct(avgPnl)} avg)`,
-    `💵 Total SOL: <b>${fmtSol(totalPnlSol)}</b>`,
+    `📊 Avg PnL: <b>${fmtPct(avgPnl)}</b>`,
     divider(),
     '📋 <b>Recent positions</b>',
     ...rows.slice(0, 10).map(r => {
@@ -344,9 +357,31 @@ export async function sendBotPnl(chatId, query = null) {
     }),
   ].filter(Boolean);
   const text = lines.join('\n');
-  return query ? editMenuMessage(query, text, navKeyboard()) : bot.sendMessage(chatId, text, { parse_mode: 'HTML', disable_web_page_preview: true });
+  return query ? editMenuMessage(query, text, navKeyboard([[
+    { text: '💰 Add SOL', callback_data: 'pnl:add' },
+    { text: '🔄 Reset', callback_data: 'pnl:reset' },
+  ]])) : bot.sendMessage(chatId, text, { parse_mode: 'HTML', disable_web_page_preview: true, ...navKeyboard([[
+    { text: '💰 Add SOL', callback_data: 'pnl:add' },
+    { text: '🔄 Reset', callback_data: 'pnl:reset' },
+  ]]) });
 }
 
-function modeIcon(mode) {
-  return mode === 'live' ? '🔴' : mode === 'confirm' ? '🟡' : '🟢';
+export async function resetBotPnl(chatId, query = null) {
+  db.prepare("DELETE FROM dry_run_positions WHERE execution_mode = 'dry_run'").run();
+  db.prepare("DELETE FROM dry_run_trades WHERE position_id NOT IN (SELECT id FROM dry_run_positions)").run();
+  db.prepare("DELETE FROM tp_sl_rules WHERE position_id NOT IN (SELECT id FROM dry_run_positions)").run();
+  resetBankroll(0.5);
+  return sendBotPnl(chatId, query);
+}
+
+export async function addBankrollSol(chatId, amount, query = null) {
+  const next = addBankroll(amount);
+  const text = `💰 <b>CHARON · BANKROLL</b>\n\n✅ Added <b>${fmtSol(amount)}</b> SOL\n💰 Bankroll now: <b>${fmtSol(next)}</b> SOL`;
+  return query ? editMenuMessage(query, text, navKeyboard([[
+    { text: '📊 Bot PnL', callback_data: 'menu:pnlbot' },
+    { text: '🔄 Reset', callback_data: 'pnl:reset' },
+  ]])) : bot.sendMessage(chatId, text, { parse_mode: 'HTML', ...navKeyboard([[
+    { text: '📊 Bot PnL', callback_data: 'menu:pnlbot' },
+    { text: '🔄 Reset', callback_data: 'pnl:reset' },
+  ]]) });
 }

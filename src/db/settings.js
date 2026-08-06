@@ -74,6 +74,21 @@ export function strategySetting(key, fallback) {
   return numSetting(key, fallback);
 }
 
+export function bankrollSol() {
+  return numSetting('bankroll_sol', 0.5);
+}
+
+export function addBankroll(amount) {
+  const next = Math.max(0, bankrollSol() + Number(amount));
+  setSetting('bankroll_sol', next.toFixed(4));
+  return next;
+}
+
+export function resetBankroll(defaultSol = 0.5) {
+  setSetting('bankroll_sol', defaultSol.toFixed(4));
+  return defaultSol;
+}
+
 function defaultStrategy() {
   return {
     id: 'dip_buy', name: 'Dip Buy',
