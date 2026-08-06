@@ -267,6 +267,7 @@ async function updateSettingFromButton(query, key, value) {
     'llm_min_confidence',
     'llm_candidate_pick_count',
     'llm_candidate_max_age_ms',
+    'signal_poll_ms',
     'max_open_positions',
     'dry_run_buy_sol',
     'default_tp_percent',
@@ -276,10 +277,10 @@ async function updateSettingFromButton(query, key, value) {
   ]);
   if (!valid.has(key) || value == null) return bot.sendMessage(chatId, '⚠️ Unknown setting.');
   setSetting(key, value);
-  const text = key.startsWith('default_') || key === 'dry_run_buy_sol' || key === 'trading_mode' || key === 'llm_min_confidence' || key === 'llm_candidate_pick_count' || key === 'llm_candidate_max_age_ms' || key === 'max_open_positions'
+  const text = key.startsWith('default_') || key === 'dry_run_buy_sol' || key === 'trading_mode' || key === 'llm_min_confidence' || key === 'llm_candidate_pick_count' || key === 'llm_candidate_max_age_ms' || key === 'signal_poll_ms' || key === 'max_open_positions'
     ? agentText()
     : filtersText();
-  const extra = key.startsWith('default_') || key === 'dry_run_buy_sol' || key === 'trading_mode' || key === 'llm_min_confidence' || key === 'llm_candidate_pick_count' || key === 'llm_candidate_max_age_ms' || key === 'max_open_positions'
+  const extra = key.startsWith('default_') || key === 'dry_run_buy_sol' || key === 'trading_mode' || key === 'llm_min_confidence' || key === 'llm_candidate_pick_count' || key === 'llm_candidate_max_age_ms' || key === 'signal_poll_ms' || key === 'max_open_positions'
     ? agentKeyboard()
     : filtersKeyboard();
   return editMenuMessage(query, text, extra);

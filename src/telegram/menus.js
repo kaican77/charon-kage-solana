@@ -4,7 +4,7 @@ import { openPositionCount, tradingMode, openPositions } from '../db/positions.j
 import { savedWallets } from '../enrichment/wallets.js';
 import { gmgnStatusText } from '../enrichment/gmgn.js';
 import { formatPosition } from './format.js';
-import { ENABLE_LLM, LLM_API_KEY } from '../config.js';
+import { ENABLE_LLM, LLM_API_KEY, SIGNAL_POLL_MS } from '../config.js';
 
 const STRAT_ICONS = {
   dip_buy: '📉',
@@ -145,7 +145,8 @@ export function agentText() {
     `🎯 Confidence: ${fmtPct(strat.llm_min_confidence || numSetting('llm_min_confidence', 75))}`,
     `📍 Open positions: ${openPositionCount()}/${strat.max_open_positions || 'unlimited'}`,
     `📦 Batch candidates: ${numSetting('llm_candidate_pick_count', 10)}`,
-    `⏱ Candidate freshness: ${Math.round(numSetting('llm_candidate_max_age_ms', 600000) / 1000)}s`,
+    `⏱ Candidate freshness: ${Math.round(numSetting('llm_candidate_max_age_ms', 600000) / 60000)}m`,
+    `🔁 Screen every: ${Math.round(numSetting('signal_poll_ms', SIGNAL_POLL_MS) / 60000)}m (restart to apply)`,
     `💵 Size: ${fmtSol(strat.position_size_sol)} SOL`,
     `🎯 TP/SL: ${fmtPct(strat.tp_percent)} / ${fmtPct(strat.sl_percent)}`,
     `📉 Trailing: ${strat.trailing_enabled ? fmtPct(strat.trailing_percent) : 'off'}`,
@@ -173,9 +174,14 @@ export function agentKeyboard() {
           { text: 'Batch 10', callback_data: 'set:llm_candidate_pick_count:10' },
         ],
         [
-          { text: 'Fresh 5m', callback_data: 'set:llm_candidate_max_age_ms:300000' },
-          { text: 'Fresh 10m', callback_data: 'set:llm_candidate_max_age_ms:600000' },
-          { text: 'Fresh 20m', callback_data: 'set:llm_candidate_max_age_ms:1200000' },
+          { text: '⏱ Cand Age 5m', callback_data: 'set:llm_candidate_max_age_ms:300000' },
+          { text: '⏱ Cand Age 10m', callback_data: 'set:llm_candidate_max_age_ms:600000' },
+          { text: '⏱ Cand Age 20m', callback_data: 'set:llm_candidate_max_age_ms:1200000' },
+        ],
+        [
+          { text: '🔁 Screen 1m', callback_data: 'set:signal_poll_ms:60000' },
+          { text: '🔁 Screen 5m', callback_data: 'set:signal_poll_ms:300000' },
+          { text: '🔁 Screen 10m', callback_data: 'set:signal_poll_ms:600000' },
         ],
         [{ text: '⬅️ Back', callback_data: 'menu:main' }],
       ],

@@ -1,6 +1,7 @@
 import { setDefaultResultOrder } from 'node:dns';
 import { APP_NAME, SIGNAL_SERVER_URL, SIGNAL_POLL_MS, GRADUATED_POLL_MS, TRENDING_POLL_MS, POSITION_CHECK_MS, validateConfig } from './config.js';
 import { initDb, db } from './db/connection.js';
+import { numSetting } from './db/settings.js';
 import { initLiveExecution } from './liveExecutor.js';
 import { setupTelegram } from './telegram/commands.js';
 import { monitorPositions } from './execution/positions.js';
@@ -48,7 +49,9 @@ export async function startCharon() {
     const trackDip = makeFailureTracker('dip monitor', alert);
 
     await fetchServerSignals().catch(error => console.log(`[server] initial fetch failed: ${error.message}`));
-    setInterval(() => trackServer(() => fetchServerSignals()), SIGNAL_POLL_MS);
+    const signalPollMs = Math.max(30_000, numSetting('signal_poll_ms', SIGNAL_POLL_MS));
+    setInterval(() => trackServer(() => fetchServerSignals()), signalPollMs);
+    console.log(`[bot] signal poll interval: ${Math.round(signalPollMs / 1000)}s`);
 
     // Price monitor for dip buy strategy
     const { monitorPriceAlerts, cleanupAlerts } = await import('./signals/priceMonitor.js');
