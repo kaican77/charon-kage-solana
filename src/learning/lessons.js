@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ENABLE_LLM, LLM_API_KEY, LLM_BASE_URL, LLM_MODEL, LLM_TIMEOUT_MS } from '../config.js';
+import { ENABLE_LLM, LLM_API_KEY, LLM_BASE_URL, LLM_MODEL, LLM_TIMEOUT_MS, LLM_LESSON_PROMPT } from '../config.js';
 import { now, json, stripThinking, strictJsonFromText } from '../utils.js';
 import { fmtPct } from '../format.js';
 import { db } from '../db/connection.js';
@@ -46,12 +46,7 @@ export async function generateLessons(summary) {
       messages: [
         {
           role: 'system',
-          content: [
-            'You are Charon learning from dry-run trading evidence.',
-            'Return strict JSON only.',
-            'Do not invent trades or outcomes.',
-            'Create compact operational lessons that can improve the next screening prompt.',
-          ].join(' '),
+          content: LLM_LESSON_PROMPT,
         },
         {
           role: 'user',
