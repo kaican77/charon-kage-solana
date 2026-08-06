@@ -166,6 +166,7 @@ export function agentKeyboard() {
           { text: 'Pos 1', callback_data: 'set:max_open_positions:1' },
           { text: 'Pos 3', callback_data: 'set:max_open_positions:3' },
           { text: 'Pos 5', callback_data: 'set:max_open_positions:5' },
+          { text: 'Pos 10', callback_data: 'set:max_open_positions:10' },
         ],
         [
           { text: 'Batch 5', callback_data: 'set:llm_candidate_pick_count:5' },
