@@ -143,8 +143,9 @@ export function formatWindow(ms) {
   return `${Math.round(ms / 60_000)}m`;
 }
 
-export function makeFailureTracker(name, alertFn, threshold = 3) {
+export function makeFailureTracker(name, alertFn, threshold = 3, minAlertIntervalMs = 10 * 60 * 1000) {
   let count = 0;
+  let lastAlertAt = 0;
   return async (fn) => {
     try {
       await fn();
@@ -152,9 +153,10 @@ export function makeFailureTracker(name, alertFn, threshold = 3) {
     } catch (err) {
       count++;
       console.log(`[${name}] ${err.message}`);
-      if (count >= threshold) {
+      if (count >= threshold && now() - lastAlertAt >= minAlertIntervalMs) {
         alertFn(`⚠️ <b>${name}</b> failed ${count}x in a row: ${err.message}`).catch(() => {});
         count = 0;
+        lastAlertAt = now();
       }
     }
   };
