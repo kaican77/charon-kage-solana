@@ -223,6 +223,21 @@ export function positionsText() {
   return `📍 <b>CHARON · POSITIONS</b>\n\n${text}`;
 }
 
+export function positionsKeyboard() {
+  const rows = openPositions();
+  const buttons = rows.length
+    ? [rows.map(r => ({ text: `#${r.id} ${r.symbol || r.mint?.slice(0, 6) || ''}`, callback_data: `pos:${r.id}` }))]
+    : [];
+  return {
+    reply_markup: {
+      inline_keyboard: [
+        ...buttons,
+        [{ text: '⬅️ Back', callback_data: 'menu:main' }],
+      ],
+    },
+  };
+}
+
 export function strategyMenuText() {
   const strat = activeStrategy();
   const all = allStrategies();
@@ -397,12 +412,17 @@ export function positionButtons(positionId) {
         [
           { text: '🎯 TP +25%', callback_data: `tp:${positionId}:25` },
           { text: '🎯 TP +50%', callback_data: `tp:${positionId}:50` },
+          { text: '🎯 TP +100%', callback_data: `tp:${positionId}:100` },
         ],
         [
           { text: '🛑 SL -15%', callback_data: `sl:${positionId}:-15` },
           { text: '🛑 SL -25%', callback_data: `sl:${positionId}:-25` },
+          { text: '🛑 SL -40%', callback_data: `sl:${positionId}:-40` },
         ],
-        [{ text: '📉 Trail On/Off', callback_data: `trail:${positionId}` }],
+        [
+          { text: '📉 Trail On/Off', callback_data: `trail:${positionId}` },
+          { text: '⌨️ Custom TP/SL', callback_data: `posinput:${positionId}` },
+        ],
       ],
     },
   };

@@ -66,6 +66,11 @@ export function updateStrategyConfig(id, config) {
     strategyCache.config = null;
     strategyCache.at = 0;
   }
+  // Live-sync position size to open positions of this strategy (size is a snapshot at entry;
+  // user expects inline size edits to apply to running positions too).
+  if (Number.isFinite(Number(config.position_size_sol)) && Number(config.position_size_sol) > 0) {
+    db.prepare('UPDATE dry_run_positions SET size_sol = ? WHERE strategy_id = ? AND status = \'open\'').run(Number(config.position_size_sol), id);
+  }
 }
 
 export function strategySetting(key, fallback) {
@@ -105,15 +110,18 @@ function defaultStrategy() {
   };
 }
 
-// Resolve live TP/SL/trailing for a position from its strategy config.
-// Falls back to the position's own snapshot if strategy is missing.
-// This makes inline strategy edits apply to all open positions automatically.
+// Resolve live TP/SL/trailing for a position.
+// Priority: manual per-position override (tp_sl_rules) > strategy config (live sync) > position snapshot.
 export function positionTpSl(position) {
+  const id = Number(position?.id);
+  const manual = Number.isFinite(id) && id > 0
+    ? db.prepare('SELECT tp_percent, sl_percent, trailing_enabled, trailing_percent FROM tp_sl_rules WHERE position_id = ?').get(id)
+    : null;
   const strat = position?.strategy_id ? strategyById(position.strategy_id) : null;
-  const tp = strat?.tp_percent ?? position?.tp_percent ?? 50;
-  const sl = strat?.sl_percent ?? position?.sl_percent ?? -25;
-  const trailingEnabled = strat?.trailing_enabled ?? Boolean(position?.trailing_enabled);
-  const trailingPercent = strat?.trailing_percent ?? position?.trailing_percent ?? 20;
+  const tp = manual?.tp_percent ?? strat?.tp_percent ?? position?.tp_percent ?? 50;
+  const sl = manual?.sl_percent ?? strat?.sl_percent ?? position?.sl_percent ?? -25;
+  const trailingEnabled = manual ? Boolean(manual.trailing_enabled) : (strat?.trailing_enabled ?? Boolean(position?.trailing_enabled));
+  const trailingPercent = manual?.trailing_percent ?? strat?.trailing_percent ?? position?.trailing_percent ?? 20;
   return {
     tp_percent: Number(tp),
     sl_percent: Number(sl),

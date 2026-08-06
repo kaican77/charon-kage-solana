@@ -63,6 +63,21 @@ export async function requestBankrollInput(query) {
   );
 }
 
+export async function requestPositionTpSlInput(query, positionId) {
+  const chatId = query.message?.chat?.id || TELEGRAM_CHAT_ID;
+  pendingNumericInputs.set(String(chatId), {
+    type: 'position_tpsl',
+    positionId,
+    at: now(),
+    messageId: query.message?.message_id || null,
+  });
+  return editMenuMessage(
+    query,
+    `🎯 <b>CHARON · POSITION #${positionId} TP/SL</b>\n\nSend TP then SL (space separated), e.g.:\n<code>50 -25</code>  (TP +50%, SL -25%)\n\nOr send one value to set only TP:\n<code>75</code>`,
+    navKeyboard([[{ text: 'Cancel', callback_data: `pos:${positionId}` }]]),
+  );
+}
+
 export async function consumeNumericFilterInput(chatId, text, userMessageId = null) {
   const pending = pendingNumericInputs.get(String(chatId));
   if (!pending) return false;
@@ -104,6 +119,17 @@ export async function consumeNumericFilterInput(chatId, text, userMessageId = nu
     } else {
       await bot.sendMessage(chatId, strategyMenuText(), { parse_mode: 'HTML', ...strategyKeyboard() });
     }
+  } else if (pending.type === 'position_tpsl') {
+    const { updatePositionRule } = await import('./commands.js');
+    const [tpRaw, slRaw] = String(text).trim().split(/\s+/);
+    const tp = parseNumericInput(tpRaw);
+    if (tp != null && tp > 0) await updatePositionRule(chatId, pending.positionId, 'tp_percent', tp, null);
+    if (slRaw !== undefined) {
+      const sl = parseNumericInput(slRaw);
+      if (sl != null && sl < 0) await updatePositionRule(chatId, pending.positionId, 'sl_percent', sl, null);
+    }
+    const { sendPosition } = await import('./commands.js');
+    await sendPosition(chatId, pending.positionId, null);
   } else {
     setSetting(pending.key, String(value));
     if (pending.messageId) {

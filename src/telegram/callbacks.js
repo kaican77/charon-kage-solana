@@ -12,6 +12,7 @@ import {
   mainMenuText,
   walletsText,
   positionsText,
+  positionsKeyboard,
   candidateButtons,
   sendTpSlDefaults,
   strategyMenuText,
@@ -52,7 +53,7 @@ export async function handleCallback(query) {
   if (data === 'menu:filters') return editMenuMessage(query, filtersText(), filtersKeyboard());
   if (data === 'menu:strategy') return editMenuMessage(query, strategyMenuText(), strategyKeyboard());
   if (data === 'menu:wallets') return editMenuMessage(query, walletsText(), navKeyboard());
-  if (data === 'menu:positions') return editMenuMessage(query, positionsText(), navKeyboard());
+  if (data === 'menu:positions') return editMenuMessage(query, positionsText(), positionsKeyboard());
   if (data === 'menu:pnl') {
     const { sendPnl } = await import('./commands.js');
     return sendPnl(chatId, query);
@@ -144,6 +145,10 @@ export async function handleCallback(query) {
   if (kind === 'tp') return updatePositionRule(chatId, Number(id), 'tp_percent', Number(value), query);
   if (kind === 'sl') return updatePositionRule(chatId, Number(id), 'sl_percent', Number(value), query);
   if (kind === 'trail') return toggleTrailing(chatId, Number(id), query);
+  if (kind === 'posinput') {
+    const { requestPositionTpSlInput } = await import('./input.js');
+    return requestPositionTpSlInput(query, Number(id));
+  }
   return null;
 }
 
