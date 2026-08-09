@@ -23,6 +23,7 @@ import { candidateSummary } from './format.js';
 import { candidateById, updateCandidateStatus } from '../db/candidates.js';
 import { storeDecision, logDecisionEvent } from '../db/decisions.js';
 import { createDryRunPosition, canOpenMorePositions, openPositionCount, tradingMode } from '../db/positions.js';
+import { openPositions } from '../db/positions.js';
 import { executeLiveBuy, executeConfirmedIntent, rejectIntent } from '../execution/router.js';
 import { sendCandidate, sendPosition, closePosition, updatePositionRule, toggleTrailing } from './commands.js';
 import { requestNumericFilterInput, requestStrategyNumericInput } from './input.js';
@@ -87,6 +88,26 @@ export async function handleCallback(query) {
 
   if (data.startsWith('strategy:select:')) {
     const strategyId = data.replace('strategy:select:', '');
+    const open = openPositions();
+    if (open.length > 0) {
+      const current = activeStrategy();
+      const list = open.map(p => `#${p.id} ${p.symbol || p.mint.slice(0, 6)}`).join(', ');
+      return editMenuMessage(query,
+        `⚠️ <b>Strategy switch blocked</b>\n\nYou have ${open.length} open position(s): ${escapeHtml(list)}\n\nSwitching from <b>${escapeHtml(current.name)}</b> to <b>${escapeHtml(strategyId)}</b> while positions are open can cause mismatched TP/SL, size, and filters.\n\nClose positions first or confirm below.`,
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: `✅ Switch anyway to ${strategyId}`, callback_data: `switch:confirm:${strategyId}` }],
+              [{ text: '❌ Cancel', callback_data: 'menu:strategy' }],
+            ],
+          },
+        });
+    }
+    setActiveStrategy(strategyId);
+    return editMenuMessage(query, strategyMenuText(), strategyKeyboard());
+  }
+  if (data.startsWith('switch:confirm:')) {
+    const strategyId = data.replace('switch:confirm:', '');
     setActiveStrategy(strategyId);
     return editMenuMessage(query, strategyMenuText(), strategyKeyboard());
   }
