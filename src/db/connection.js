@@ -279,6 +279,7 @@ export function initDb() {
     max_hold_ms: 0,
     use_llm: true,
     llm_min_confidence: 60,
+    llm_candidate_pick_count: 10,
   }), ts);
 
   stratInsert.run('smart_money', 'Smart Money', 0, JSON.stringify({
@@ -311,6 +312,7 @@ export function initDb() {
     max_hold_ms: 0,
     use_llm: true,
     llm_min_confidence: 70,
+    llm_candidate_pick_count: 10,
   }), ts);
 
   stratInsert.run('akashi_zone', 'Akashi Zone', 0, JSON.stringify({
@@ -333,7 +335,7 @@ export function initDb() {
     trending_max_rug_ratio: 0.25,
     trending_max_bundler_rate: 0.4,
     position_size_sol: 0.08,
-    max_open_positions: 3,
+    max_open_positions: 10,
     tp_percent: 30,
     sl_percent: -85,
     trailing_enabled: true,
@@ -343,6 +345,7 @@ export function initDb() {
     partial_tp_sell_percent: 30,
     max_hold_ms: 0,
     use_llm: true,
+    llm_candidate_pick_count: 10,
     llm_min_confidence: 70,
   }), ts);
 

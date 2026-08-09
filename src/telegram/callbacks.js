@@ -91,8 +91,10 @@ export async function handleCallback(query) {
     return editMenuMessage(query, strategyMenuText(), strategyKeyboard());
   }
   if (data.startsWith('stratcfg:')) {
-    const key = data.replace('stratcfg:', '');
-    return handleStratConfig(query, chatId, key);
+    const rest = data.replace('stratcfg:', '');
+    const [key, ...valueParts] = rest.split(':');
+    const value = valueParts.join(':');
+    return handleStratConfig(query, chatId, key, value || null);
   }
   if (data.startsWith('stratinput:')) {
     const key = data.replace('stratinput:', '');
@@ -216,7 +218,7 @@ function formatStratValue(key, value) {
   return String(value);
 }
 
-async function handleStratConfig(query, chatId, key) {
+async function handleStratConfig(query, chatId, key, rawValue = null) {
   const strat = activeStrategy();
   const newConfig = { ...strat };
   delete newConfig.id;
@@ -228,6 +230,22 @@ async function handleStratConfig(query, chatId, key) {
     newConfig[key] = !strat[key];
     updateStrategyConfig(strat.id, newConfig);
     return editMenuMessage(query, strategyMenuText(), strategyKeyboard());
+  }
+
+  // Direct value from inline button (e.g. stratcfg:llm_min_confidence:70)
+  if (rawValue != null) {
+    const numValue = Number(rawValue);
+    if (!Number.isNaN(numValue)) {
+      newConfig[key] = numValue;
+    } else if (rawValue === 'true' || rawValue === 'false') {
+      newConfig[key] = rawValue === 'true';
+    } else {
+      newConfig[key] = rawValue;
+    }
+    updateStrategyConfig(strat.id, newConfig);
+    const text = isAgentKey(key) ? agentText() : isFiltersKey(key) ? filtersText() : strategyMenuText();
+    const extra = isAgentKey(key) ? agentKeyboard() : isFiltersKey(key) ? filtersKeyboard() : strategyKeyboard();
+    return editMenuMessage(query, text, extra);
   }
 
   // Cycle through presets
@@ -245,32 +263,24 @@ async function handleStratConfig(query, chatId, key) {
   return bot.sendMessage(chatId, `Current ${key}: ${formatStratValue(key, strat[key])}\nUse /stratset ${strat.id} ${key} <value> to change.`);
 }
 
+function isAgentKey(key) {
+  return ['llm_min_confidence', 'llm_candidate_pick_count', 'max_open_positions'].includes(key);
+}
+
+function isFiltersKey(key) {
+  return ['trending_enabled', 'trending_source', 'trending_allow_degen', 'trending_interval', 'trending_limit',
+    'trending_order_by', 'trending_min_volume_usd', 'trending_min_swaps', 'trending_max_rug_ratio', 'trending_max_bundler_rate',
+    'min_fee_claim_sol', 'min_mcap_usd', 'max_mcap_usd', 'min_gmgn_total_fee_sol', 'min_graduated_volume_usd',
+    'max_top20_holder_percent', 'min_saved_wallet_holders', 'min_holders'].includes(key);
+}
+
 async function updateSettingFromButton(query, key, value) {
   const chatId = query.message?.chat?.id || TELEGRAM_CHAT_ID;
   const valid = new Set([
-    'min_fee_claim_sol',
-    'min_mcap_usd',
-    'max_mcap_usd',
-    'min_gmgn_total_fee_sol',
-    'min_graduated_volume_usd',
-    'max_top20_holder_percent',
-    'min_saved_wallet_holders',
-    'trending_enabled',
-    'trending_source',
-    'trending_allow_degen',
-    'trending_interval',
-    'trending_limit',
-    'trending_order_by',
-    'trending_min_volume_usd',
-    'trending_min_swaps',
-    'trending_max_rug_ratio',
-    'trending_max_bundler_rate',
+    'agent_enabled',
     'trading_mode',
-    'llm_min_confidence',
-    'llm_candidate_pick_count',
     'llm_candidate_max_age_ms',
     'signal_poll_ms',
-    'max_open_positions',
     'dry_run_buy_sol',
     'default_tp_percent',
     'default_sl_percent',
@@ -279,11 +289,5 @@ async function updateSettingFromButton(query, key, value) {
   ]);
   if (!valid.has(key) || value == null) return bot.sendMessage(chatId, '⚠️ Unknown setting.');
   setSetting(key, value);
-  const text = key.startsWith('default_') || key === 'dry_run_buy_sol' || key === 'trading_mode' || key === 'llm_min_confidence' || key === 'llm_candidate_pick_count' || key === 'llm_candidate_max_age_ms' || key === 'signal_poll_ms' || key === 'max_open_positions'
-    ? agentText()
-    : filtersText();
-  const extra = key.startsWith('default_') || key === 'dry_run_buy_sol' || key === 'trading_mode' || key === 'llm_min_confidence' || key === 'llm_candidate_pick_count' || key === 'llm_candidate_max_age_ms' || key === 'signal_poll_ms' || key === 'max_open_positions'
-    ? agentKeyboard()
-    : filtersKeyboard();
-  return editMenuMessage(query, text, extra);
+  return editMenuMessage(query, agentText(), agentKeyboard());
 }
