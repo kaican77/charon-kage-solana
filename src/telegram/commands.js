@@ -165,7 +165,14 @@ export async function sendCandidate(chatId, id) {
 
 export async function sendPositions(chatId) {
   const rows = openPositions();
-  const text = rows.length ? rows.map(formatPosition).join('\n\n') : '📍 No open positions right now.';
+  const refreshed = [];
+  for (const row of rows) {
+    const r = row.status === 'open'
+      ? (await refreshPosition(row, { autoExit: row.execution_mode !== 'live' }).catch(() => null) || row)
+      : row;
+    refreshed.push(r);
+  }
+  const text = refreshed.length ? refreshed.map(formatPosition).join('\n\n') : '📍 No open positions right now.';
   await bot.sendMessage(chatId, `📍 <b>CHARON · POSITIONS</b>\n\n${text}`, { parse_mode: 'HTML', disable_web_page_preview: true });
 }
 

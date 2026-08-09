@@ -1,4 +1,5 @@
 import { escapeHtml, fmtPct, fmtPnl, fmtSol, fmtUsd, short, gmgnLink, txLink, accountLink, divider, lightDivider, progressBar } from '../format.js';
+import { firstPositiveNumber } from '../utils.js';
 import { positionTpSl } from '../db/settings.js';
 
 const ROUTE_ICONS = {
@@ -144,23 +145,37 @@ export function batchRevealSummary(batchId, rows, decision, triggerCandidateId =
 export function formatPosition(position) {
   const pnl = position.pnl_percent != null
     ? Number(position.pnl_percent)
-    : position.entry_mcap && position.high_water_mcap
-      ? (Number(position.high_water_mcap) / Number(position.entry_mcap) - 1) * 100
-      : 0;
+    : position.entry_mcap && position.mcap
+      ? (Number(position.mcap) / Number(position.entry_mcap) - 1) * 100
+      : position.entry_mcap && position.high_water_mcap
+        ? (Number(position.high_water_mcap) / Number(position.entry_mcap) - 1) * 100
+        : 0;
   const pnlTag = fmtPnl(pnl);
   const tpSl = positionTpSl(position);
-  return [
-    `📍 <b>${escapeHtml(position.symbol || short(position.mint))}</b> #${position.id}`,
-    divider(),
+  const currentMcap = firstPositiveNumber(position.mcap, position.high_water_mcap, position.entry_mcap);
+  const isClosed = position.status === 'closed';
+  const statusIcon = isClosed ? '🔒' : '🔵';
+  const modeIcon = position.execution_mode === 'live' ? '🔴' : position.execution_mode === 'confirm' ? '🟡' : '🟢';
+
+  const lines = [
+    `${statusIcon} <b>${escapeHtml(position.symbol || short(position.mint))}</b> #${position.id}`,
+    lightDivider(),
     `🔗 <a href="${gmgnLink(position.mint)}">${short(position.mint)}</a>`,
-    `📊 Status: <b>${escapeHtml(position.status)}</b> · 🎛 Mode: <b>${escapeHtml(position.execution_mode || 'dry_run')}</b> · 🎯 Strategy: <b>${escapeHtml(position.strategy_id || 'dip_buy')}</b>`,
+    `${modeIcon} Mode: <b>${escapeHtml(position.execution_mode || 'dry_run')}</b> · 🎯 Strategy: <b>${escapeHtml(position.strategy_id || 'akashi_zone')}</b> · 📊 Status: <b>${escapeHtml(position.status)}</b>`,
     position.entry_signature ? `➡️ Entry TX: <a href="${txLink(position.entry_signature)}">${short(position.entry_signature)}</a>` : null,
-    `💰 Entry mcap: ${fmtUsd(position.entry_mcap)} · ⛰ High: ${fmtUsd(position.high_water_mcap)}`,
-    `💵 Size: ${fmtSol(position.size_sol)} SOL · ${pnlTag.icon} PnL: <b>${pnlTag.text}</b>`,
-    `🎯 TP: ${fmtPct(tpSl.tp_percent)} · 🛑 SL: ${fmtPct(tpSl.sl_percent)} · 📉 Trail: ${tpSl.trailing_enabled ? `${fmtPct(tpSl.trailing_percent)}` : 'off'}`,
-    position.exit_reason ? `🚪 Exit: ${escapeHtml(position.exit_reason)} at ${fmtUsd(position.exit_mcap)} (${fmtPct(position.pnl_percent)})` : null,
+    divider(),
+    `💰 Entry mcap: <b>${fmtUsd(position.entry_mcap)}</b>`,
+    `⬆️ ATH mcap:   <b>${fmtUsd(position.high_water_mcap || position.entry_mcap)}</b>`,
+    isClosed
+      ? `💵 Exit mcap:  <b>${fmtUsd(position.exit_mcap)}</b>`
+      : `💵 Current mcap: <b>${fmtUsd(currentMcap)}</b> · updated now`,
+    divider(),
+    `💸 Size: <b>${fmtSol(position.size_sol)} SOL</b> · ${pnlTag.icon} PnL: <b>${pnlTag.text}</b>`,
+    `🎯 TP: ${fmtPct(tpSl.tp_percent)} · 🚨 SL: ${fmtPct(tpSl.sl_percent)} · 📉 Trail: ${tpSl.trailing_enabled ? `${fmtPct(tpSl.trailing_percent)}` : 'off'}`,
+    position.exit_reason ? `🚪 Exit: <b>${escapeHtml(position.exit_reason)}</b> at ${fmtUsd(position.exit_mcap)} (${fmtPct(position.pnl_percent)})` : null,
     position.exit_signature ? `⬅️ Exit TX: <a href="${txLink(position.exit_signature)}">${short(position.exit_signature)}</a>` : null,
-  ].filter(Boolean).join('\n');
+  ];
+  return lines.filter(Boolean).join('\n');
 }
 
 export function compactDecisionCandidate(row) {
