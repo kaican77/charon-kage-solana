@@ -1,6 +1,6 @@
 import { escapeHtml, fmtPct, fmtPnl, fmtSol, fmtUsd, short, gmgnLink, txLink, accountLink, divider, lightDivider, progressBar } from '../format.js';
 import { firstPositiveNumber } from '../utils.js';
-import { positionTpSl } from '../db/settings.js';
+import { positionTpSl, boolSetting } from '../db/settings.js';
 
 const ROUTE_ICONS = {
   fees: '💸',
@@ -102,6 +102,9 @@ export function candidateSummary(candidate, decision = null) {
   if (candidate.feeClaim) sections.push(`💸 Fee claim: <b>${fmtSol(candidate.feeClaim.distributedSol)} SOL</b>`);
   if (candidate.twitterNarrative?.text) sections.push(`📰 Narrative: ${escapeHtml(candidate.twitterNarrative.text.slice(0, 220))}`);
   if (!candidate.filters.passed) sections.push(`⛔ Filtered: ${escapeHtml(candidate.filters.failures.join('; '))}`);
+  if (decision?.verdict === 'BUY' && !boolSetting('agent_enabled', true)) {
+    sections.push(`\u26a0️ <b>AGENT DISABLED</b> \u2014 this BUY will <b>NOT</b> execute. Enable agent in the Agent menu first.`);
+  }
   if (decision) {
     sections.push(divider());
     sections.push(verdictTag(decision));
