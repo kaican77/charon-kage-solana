@@ -222,16 +222,16 @@ export function walletsText() {
   return `👛 <b>CHARON · SAVED WALLETS</b>\n\n${body}`;
 }
 
-export function positionsText() {
-  const rows = openPositions();
-  const text = rows.length ? rows.map(formatPosition).join('\n\n') : '📍 No open positions right now.';
+export function positionsText(rows = null) {
+  const list = rows || openPositions();
+  const text = list.length ? list.map(formatPosition).join('\n\n') : '📍 No open positions right now.';
   return `📍 <b>CHARON · POSITIONS</b>\n\n${text}`;
 }
 
-export function positionsKeyboard() {
-  const rows = openPositions();
-  const buttons = rows.length
-    ? [rows.map(r => ({ text: `#${r.id} ${r.symbol || r.mint?.slice(0, 6) || ''}`, callback_data: `pos:${r.id}` }))]
+export function positionsKeyboard(rows = null) {
+  const list = rows || openPositions();
+  const buttons = list.length
+    ? [list.map(r => ({ text: `#${r.id} ${r.symbol || r.mint?.slice(0, 6) || ''}`, callback_data: `pos:${r.id}` }))]
     : [];
   return {
     reply_markup: {
@@ -427,6 +427,10 @@ export function positionButtons(positionId) {
         [
           { text: '📉 Trail On/Off', callback_data: `trail:${positionId}` },
           { text: '⌨️ Custom TP/SL', callback_data: `posinput:${positionId}` },
+        ],
+        [
+          { text: '📍 Positions', callback_data: 'menu:positions' },
+          { text: '🏠 Main Menu', callback_data: 'menu:main' },
         ],
       ],
     },

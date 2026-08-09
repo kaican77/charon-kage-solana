@@ -54,7 +54,18 @@ export async function handleCallback(query) {
   if (data === 'menu:filters') return editMenuMessage(query, filtersText(), filtersKeyboard());
   if (data === 'menu:strategy') return editMenuMessage(query, strategyMenuText(), strategyKeyboard());
   if (data === 'menu:wallets') return editMenuMessage(query, walletsText(), navKeyboard());
-  if (data === 'menu:positions') return editMenuMessage(query, positionsText(), positionsKeyboard());
+  if (data === 'menu:positions') {
+    const { openPositions } = await import('../db/positions.js');
+    const { refreshPosition } = await import('../execution/positions.js');
+    const rows = openPositions();
+    const refreshed = [];
+    for (const row of rows) {
+      if (row.status !== 'open') { refreshed.push(row); continue; }
+      const r = await refreshPosition(row, { autoExit: row.execution_mode !== 'live' }).catch(() => null);
+      refreshed.push(r || row);
+    }
+    return editMenuMessage(query, positionsText(refreshed), positionsKeyboard(refreshed));
+  }
   if (data === 'menu:pnl') {
     const { sendPnl } = await import('./commands.js');
     return sendPnl(chatId, query);
