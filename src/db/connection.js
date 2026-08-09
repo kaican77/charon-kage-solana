@@ -314,7 +314,7 @@ export function initDb() {
   }), ts);
 
   stratInsert.run('akashi_zone', 'Akashi Zone', 0, JSON.stringify({
-    entry_mode: 'immediate',
+    entry_mode: 'wait_for_dip',
     min_source_count: 2,
     require_fee_claim: false,
     token_age_max_ms: 86400000,
@@ -325,7 +325,8 @@ export function initDb() {
     min_holders: 500,
     max_top20_holder_percent: 60,
     min_saved_wallet_holders: 0,
-    max_ath_distance_pct: 0,
+    max_ath_distance_pct: -80,
+    max_top_blast_risk: false,
     min_graduated_volume_usd: 0,
     trending_min_volume_usd: 3000,
     trending_min_swaps: 50,

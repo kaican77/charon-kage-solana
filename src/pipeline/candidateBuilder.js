@@ -93,6 +93,12 @@ export function filterCandidate(candidate) {
     }
   }
 
+  // Top-blast risk: reject tokens near their high (double-top / fresh ATH formation).
+  // Akashi Zone wants a pullback zone, not a token printing a new high.
+  if (strat.max_top_blast_risk === false && candidate.chart?.topBlastRisk === true) {
+    failures.push(`top blast risk: price near ATH/high (double-top / new ATH formation)`);
+  }
+
   // Trending filters
   if (candidate.trending) {
     if (strat.trending_min_volume_usd > 0 && trendingVolume < strat.trending_min_volume_usd) {
