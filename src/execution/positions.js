@@ -108,9 +108,16 @@ export async function refreshCandidateForExecution(row) {
 const sellInProgress = new Set();
 
 export async function refreshPosition(position, { autoExit = true, jupiterPnl = null } = {}) {
-  const asset = await fetchJupiterAsset(position.mint);
-  const price = firstPositiveNumber(asset?.usdPrice, position.high_water_price, position.entry_price);
-  const mcap = firstPositiveNumber(asset?.mcap, asset?.fdv);
+  const gmgn = await fetchGmgnTokenInfo(position.mint);
+  const asset = await fetchJupiterAsset(position.mint, { useCache: false });
+  const price = firstPositiveNumber(tokenPriceFromGmgn(gmgn), asset?.usdPrice, position.high_water_price, position.entry_price);
+  const mcap = firstPositiveNumber(
+    marketCapFromGmgn(gmgn),
+    asset?.mcap,
+    asset?.fdv,
+    position.high_water_mcap,
+    position.entry_mcap,
+  );
   if (!Number.isFinite(Number(mcap)) || !Number.isFinite(Number(position.entry_mcap)) || Number(mcap) <= 0 || Number(position.entry_mcap) <= 0) {
     return null;
   }

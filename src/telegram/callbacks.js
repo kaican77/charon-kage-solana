@@ -115,8 +115,10 @@ export async function handleCallback(query) {
   if (kind === 'buy') {
     const row = candidateById(Number(id));
     if (!row) return bot.sendMessage(chatId, '🔍 Candidate not found.');
+    const strat = activeStrategy();
+    const maxPos = strat?.max_open_positions ?? numSetting('max_open_positions', 3);
     if (!canOpenMorePositions()) {
-      return bot.sendMessage(chatId, `⚠️ Max open positions reached (${openPositionCount()}/${numSetting('max_open_positions', 3)}). Close one first or raise the limit.`);
+      return bot.sendMessage(chatId, `⚠️ Max open positions reached (${openPositionCount()}/${maxPos}). Close one first or raise the limit.`);
     }
     const candidate = row.candidate;
     const decision = { verdict: 'BUY', confidence: 100, reason: 'Manual dry buy', risks: [], suggested_tp_percent: numSetting('default_tp_percent', 50), suggested_sl_percent: numSetting('default_sl_percent', -25) };
@@ -200,7 +202,7 @@ const STRAT_PRESETS = {
   max_hold_ms: [0, 1800000, 3600000, 7200000, 14400000, 28800000, 86400000],
   min_fee_claim_sol: [0, 0.5, 1, 2, 5, 10],
   min_gmgn_total_fee_sol: [0, 3, 5, 10, 20],
-  max_ath_distance_pct: [0, -20, -30, -40, -50, -60],
+  max_ath_distance_pct: [0, -20, -30, -40, -50, -60, -70, -80],
   token_age_max_ms: [0, 1800000, 3600000, 7200000, 14400000, 43200000, 86400000],
 };
 
