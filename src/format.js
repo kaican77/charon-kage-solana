@@ -1,5 +1,5 @@
 export function escapeHtml(value) {
-  return String(value ?? '').replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>');
+  return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 export function short(address) {
