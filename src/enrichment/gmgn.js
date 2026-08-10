@@ -178,6 +178,40 @@ function normalizedTrendingRows(payload) {
   return Array.isArray(rows) ? rows : [];
 }
 
+const SMART_FIELD_KEYS = [
+  'smart_degen_count', 'renowned_count', 'sniper_count', 'top70_sniper_hold_rate',
+  'rat_trader_amount_rate', 'top_10_holder_rate', 'rug_ratio', 'bundler_rate',
+  'is_wash_trading', 'is_honeypot', 'dev_team_hold_rate',
+];
+
+// Extract the smart-money / risk fields GMGN rank rows carry. Returns {} when
+// the row has none of them (server-fed signals often omit these).
+export function extractSmartFields(row) {
+  if (!row || typeof row !== 'object') return {};
+  const out = {};
+  for (const key of SMART_FIELD_KEYS) {
+    if (row[key] !== undefined && row[key] !== null) out[key] = row[key];
+  }
+  return out;
+}
+
+// Look up a mint inside the GMGN trending rank (any interval) and return the
+// raw row if found. Used as a fallback when the signal server did not include
+// smart-money fields for a candidate.
+export async function fetchGmgnRankRow(mint, { interval = '1h', limit = 100 } = {}) {
+  if (!GMGN_ENABLED) return null;
+  try {
+    const payload = await gmgnFetch('/v1/market/rank', {
+      params: { chain: 'sol', interval, limit },
+    });
+    const rows = normalizedTrendingRows(payload);
+    return rows.find(row => String(row.address) === String(mint)) || null;
+  } catch (err) {
+    setGmgnBackoff('trending', err);
+    return null;
+  }
+}
+
 export {
   gmgnFetch,
   fetchGmgnTokenInfo,

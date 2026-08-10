@@ -304,6 +304,7 @@ function isAgentKey(key) {
 function isFiltersKey(key) {
   return ['trending_enabled', 'trending_source', 'trending_allow_degen', 'trending_interval', 'trending_limit',
     'trending_order_by', 'trending_min_volume_usd', 'trending_min_swaps', 'trending_max_rug_ratio', 'trending_max_bundler_rate',
+    'min_smart_degen_count', 'min_renowned_count',
     'min_fee_claim_sol', 'min_mcap_usd', 'max_mcap_usd', 'min_gmgn_total_fee_sol', 'min_graduated_volume_usd',
     'max_top20_holder_percent', 'min_saved_wallet_holders', 'min_holders'].includes(key);
 }

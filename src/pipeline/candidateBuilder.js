@@ -1,6 +1,6 @@
 import { now, firstPositiveNumber, marketCapFromGmgn, tokenPriceFromGmgn, lamToSol } from '../utils.js';
 import { activeStrategy } from '../db/settings.js';
-import { fetchGmgnTokenInfo } from '../enrichment/gmgn.js';
+import { fetchGmgnTokenInfo, extractSmartFields, fetchGmgnRankRow } from '../enrichment/gmgn.js';
 import { fetchJupiterAsset, fetchJupiterHolders, fetchJupiterChartContext } from '../enrichment/jupiter.js';
 import { fetchSavedWalletExposure } from '../enrichment/wallets.js';
 import { fetchTwitterNarrative } from '../enrichment/twitter.js';
@@ -117,6 +117,14 @@ export function filterCandidate(candidate) {
     if (strat.trending_max_bundler_rate > 0 && Number.isFinite(bundlerRate) && bundlerRate > strat.trending_max_bundler_rate) {
       failures.push(`trending bundler rate: ${bundlerRate} > ${strat.trending_max_bundler_rate}`);
     }
+    const smartDegen = Number(candidate.metrics.trendingSmartDegenCount ?? 0);
+    if (strat.min_smart_degen_count > 0 && smartDegen < strat.min_smart_degen_count) {
+      failures.push(`smart money: ${smartDegen} < ${strat.min_smart_degen_count}`);
+    }
+    const renowned = Number(candidate.metrics.trendingRenownedCount ?? 0);
+    if (strat.min_renowned_count > 0 && renowned < strat.min_renowned_count) {
+      failures.push(`KOL wallets: ${renowned} < ${strat.min_renowned_count}`);
+    }
     if (candidate.trending.is_wash_trading === true || candidate.trending.is_wash_trading === 1) {
       failures.push('trending wash trading');
     }
@@ -148,6 +156,20 @@ export async function buildCandidate({ mint, fee = null, signature = null, gradu
     trendingToken ? 'trending' : null,
   ].filter(Boolean).join('_');
 
+  // Smart-money / risk enrichment: the signal server often omits GMGN rank
+  // fields (smart_degen_count, renowned_count, bundler_rate, rug_ratio, ...).
+  // If the server-fed trending row lacks them, fall back to a direct GMGN rank
+  // lookup so strategy gates like min_smart_degen_count work.
+  let smartFields = {};
+  const serverSmartCount = Number(trendingToken?.smart_degen_count ?? 0);
+  if (trendingToken && serverSmartCount === 0) {
+    const rankRow = await fetchGmgnRankRow(mint, { interval: '1h', limit: 100 });
+    smartFields = extractSmartFields(rankRow);
+    if (Object.keys(smartFields).length) {
+      console.log(`[gmgn] smart fields for ${mint.slice(0, 8)}...: smart=${smartFields.smart_degen_count} renowned=${smartFields.renowned_count} bundler=${smartFields.bundler_rate}`);
+    }
+  }
+
   const candidate = {
     token: {
       mint,
@@ -170,7 +192,13 @@ export async function buildCandidate({ mint, fee = null, signature = null, gradu
       trendingVolumeUsd: Number(trendingToken?.volume ?? 0),
       trendingSwaps: Number(trendingToken?.swaps ?? 0),
       trendingHotLevel: Number(trendingToken?.hot_level ?? 0),
-      trendingSmartDegenCount: Number(trendingToken?.smart_degen_count ?? 0),
+      trendingSmartDegenCount: Number(smartFields.smart_degen_count ?? trendingToken?.smart_degen_count ?? 0),
+      trendingRenownedCount: Number(smartFields.renowned_count ?? trendingToken?.renowned_count ?? 0),
+      trendingSniperCount: Number(smartFields.sniper_count ?? trendingToken?.sniper_count ?? 0),
+      trendingTop70SniperHoldRate: Number(smartFields.top70_sniper_hold_rate ?? trendingToken?.top70_sniper_hold_rate ?? 0),
+      trendingRatTraderAmountRate: Number(smartFields.rat_trader_amount_rate ?? trendingToken?.rat_trader_amount_rate ?? 0),
+      trendingTop10HolderRate: Number(smartFields.top_10_holder_rate ?? trendingToken?.top_10_holder_rate ?? 0),
+      trendingDevTeamHoldRate: Number(smartFields.dev_team_hold_rate ?? trendingToken?.dev_team_hold_rate ?? 0),
     },
     signals: {
       route: signalRoute,
