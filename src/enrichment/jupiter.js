@@ -1,20 +1,40 @@
 import axios from 'axios';
-import { WSOL_MINT, JSON_HEADERS } from '../config.js';
+import { WSOL_MINT, JSON_HEADERS, JUPITER_API_KEY } from '../config.js';
 import { now } from '../utils.js';
 
-const jupiterAssetCache = new Map();
-let jupiterAssetBackoffUntil = 0;
-
-function jupiterAssetBackoffActive() {
-  return now() < jupiterAssetBackoffUntil;
+// Authenticated header for Jupiter Data API. Adding JUPITER_API_KEY lifts calls
+// from the Keyless tier (0.5 rps, easy to 429) to the authenticated tier. If no
+// key is configured we still send a benign header so the request shape stays
+// consistent and we can detect "missing key" in logs.
+function jupiterDataHeaders() {
+  return {
+    ...JSON_HEADERS,
+    ...(JUPITER_API_KEY ? { 'x-api-key': JUPITER_API_KEY } : {}),
+  };
 }
 
-function setJupiterAssetBackoff(err) {
-  if (err.response?.status !== 429) return;
+// Per-endpoint 429 backoff gate. Reused by all Jupiter Data API calls so a 429
+// from /asset, /holders, /charts, or /pnl doesn't immediately re-fire next cycle.
+const jupiterBackoffs = new Map();
+
+function jupiterBackoffActive(name) {
+  const until = jupiterBackoffs.get(name) || 0;
+  return now() < until;
+}
+
+function setJupiterBackoff(name, err) {
+  if (err?.response?.status !== 429) return;
   const resetHeader = Number(err.response?.headers?.['x-ratelimit-reset'] || 0);
   const resetMs = resetHeader > 1_000_000_000_000 ? resetHeader : resetHeader * 1000;
-  jupiterAssetBackoffUntil = resetMs > now() ? resetMs : now() + 30_000;
-  console.log(`[asset] backing off until ${new Date(jupiterAssetBackoffUntil).toISOString()} (429)`);
+  const until = resetMs > now() ? resetMs : now() + 30_000;
+  jupiterBackoffs.set(name, until);
+  console.log(`[${name}] backing off until ${new Date(until).toISOString()} (429)`);
+}
+
+const jupiterAssetCache = new Map();
+
+function jupiterAssetBackoffActive() {
+  return jupiterBackoffActive('asset');
 }
 
 function jupiterStatsForInterval(row, interval) {
@@ -64,14 +84,14 @@ async function fetchJupiterAsset(mint, { useCache = true, ttlMs = 20_000 } = {})
     url.searchParams.set('query', mint);
     const res = await axios.get(url.toString(), {
       timeout: 10_000,
-      headers: JSON_HEADERS,
+      headers: jupiterDataHeaders(),
     });
     const rows = Array.isArray(res.data) ? res.data : [];
     const data = rows.find(row => row?.id === mint) || rows[0] || null;
     jupiterAssetCache.set(mint, { at: now(), data });
     return data;
   } catch (err) {
-    setJupiterAssetBackoff(err);
+    setJupiterBackoff('asset', err);
     if (err.response?.status !== 429) console.log(`[asset] ${mint.slice(0, 8)}... ${err.response?.status || ''} ${err.message}`);
     return cached?.data || null;
   }
@@ -99,10 +119,11 @@ async function estimateTokenAmountFromSol(sizeSol, entryPrice) {
 }
 
 async function fetchJupiterHolders(mint) {
+  if (jupiterBackoffActive('holders')) return { count: 0, holders: [], top20: [], top20Percent: null, maxHolderPercent: null };
   try {
     const res = await axios.get(`https://datapi.jup.ag/v1/holders/${mint}`, {
       timeout: 10_000,
-      headers: JSON_HEADERS,
+      headers: jupiterDataHeaders(),
     });
     const holders = Array.isArray(res.data?.holders) ? res.data.holders : [];
     const total = holders.reduce((sum, holder) => sum + Number(holder.amount || 0), 0);
@@ -125,6 +146,7 @@ async function fetchJupiterHolders(mint) {
       maxHolderPercent: Math.max(0, ...top20.map(holder => Number(holder.percent || 0))),
     };
   } catch (err) {
+    setJupiterBackoff('holders', err);
     console.log(`[holders] ${mint.slice(0, 8)}... ${err.response?.status || ''} ${err.message}`);
     return { count: 0, holders: [], top20: [], top20Percent: null, maxHolderPercent: null };
   }
@@ -157,17 +179,24 @@ function summarizeCandles(label, candles) {
 }
 
 async function fetchJupiterChartWindow(mint, interval, candles, label) {
+  if (jupiterBackoffActive('chart')) return { label, available: false, error: 'backoff' };
   const url = new URL(`https://datapi.jup.ag/v2/charts/${mint}`);
   url.searchParams.set('interval', interval);
   url.searchParams.set('to', String(now()));
   url.searchParams.set('candles', String(candles));
   url.searchParams.set('type', 'price');
   url.searchParams.set('quote', 'native');
-  const res = await axios.get(url.toString(), {
-    timeout: 10_000,
-    headers: JSON_HEADERS,
-  });
-  return summarizeCandles(label, Array.isArray(res.data?.candles) ? res.data.candles : []);
+  try {
+    const res = await axios.get(url.toString(), {
+      timeout: 10_000,
+      headers: jupiterDataHeaders(),
+    });
+    return summarizeCandles(label, Array.isArray(res.data?.candles) ? res.data.candles : []);
+  } catch (err) {
+    setJupiterBackoff('chart', err);
+    console.log(`[chart] ${mint.slice(0, 8)}... ${interval} ${err.response?.status || ''} ${err.message}`);
+    return { label, available: false, error: err.message };
+  }
 }
 
 async function fetchJupiterChartContext(mint) {
@@ -207,15 +236,17 @@ const IGNORED_PNL_MINTS = new Set([
 ]);
 
 async function fetchJupiterWalletPnl(walletAddress) {
+  if (jupiterBackoffActive('pnl')) return {};
   try {
     const url = new URL('https://datapi.jup.ag/v1/pnl');
     url.searchParams.set('addresses', walletAddress);
     url.searchParams.set('includeClosed', 'false');
-    const res = await axios.get(url.toString(), { timeout: 10_000, headers: JSON_HEADERS });
+    const res = await axios.get(url.toString(), { timeout: 10_000, headers: jupiterDataHeaders() });
     const data = res.data?.[walletAddress] || {};
     for (const mint of IGNORED_PNL_MINTS) delete data[mint];
     return data;
   } catch (err) {
+    setJupiterBackoff('pnl', err);
     console.log(`[pnl] ${err.response?.status || ''} ${err.message}`);
     return {};
   }
@@ -233,5 +264,6 @@ export {
   fetchJupiterChartContext,
   fetchJupiterWalletPnl,
   jupiterAssetBackoffActive,
-  setJupiterAssetBackoff,
+  setJupiterBackoff,
+  jupiterBackoffActive,
 };
