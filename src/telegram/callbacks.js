@@ -230,6 +230,8 @@ const STRAT_PRESETS = {
   trailing_percent: [10, 15, 20, 25, 30],
   min_source_count: [1, 2, 3, 4],
   min_holders: [0, 100, 500, 1000, 2000, 5000],
+  max_top20_holder_percent: [50, 60, 70, 75, 80, 90, 100],
+  max_whale_percent: [10, 20, 25, 30, 40, 50, 100],
   llm_min_confidence: [0, 30, 50, 60, 70, 80, 90],
   partial_tp_at_percent: [25, 50, 75, 100, 150, 200],
   partial_tp_sell_percent: [25, 33, 50, 75],

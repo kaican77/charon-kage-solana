@@ -33,7 +33,8 @@ export function filterCandidate(candidate) {
   const mcap = candidate.metrics.marketCapUsd;
   const totalFees = candidate.metrics.gmgnTotalFeesSol;
   const gradVolume = candidate.metrics.graduatedVolumeUsd;
-  const maxHolder = candidate.holders.maxHolderPercent;
+  const maxTop20 = candidate.holders.top20Percent;
+  const maxWhale = candidate.holders.maxHolderPercent;
   const savedCount = candidate.savedWalletExposure.holderCount;
   const feeSol = candidate.feeClaim?.distributedSol;
   const holderCount = Number(candidate.metrics.holderCount || 0);
@@ -75,9 +76,12 @@ export function filterCandidate(candidate) {
     failures.push(`holders: ${holderCount} < ${strat.min_holders}`);
   }
 
-  // Top holder concentration
-  if (strat.max_top20_holder_percent < 100 && Number.isFinite(maxHolder) && maxHolder > strat.max_top20_holder_percent) {
-    failures.push(`max top holder: ${maxHolder}% > ${strat.max_top20_holder_percent}%`);
+  // Top holder concentration — top-20 combined (anti-bundler), plus single-whale cap
+  if (strat.max_top20_holder_percent < 100 && Number.isFinite(maxTop20) && maxTop20 > strat.max_top20_holder_percent) {
+    failures.push(`top20 holders: ${maxTop20.toFixed(1)}% > ${strat.max_top20_holder_percent}%`);
+  }
+  if (strat.max_whale_percent != null && strat.max_whale_percent < 100 && Number.isFinite(maxWhale) && maxWhale > strat.max_whale_percent) {
+    failures.push(`top holder: ${maxWhale.toFixed(1)}% > ${strat.max_whale_percent}%`);
   }
 
   // Saved wallet holders

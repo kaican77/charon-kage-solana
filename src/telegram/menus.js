@@ -53,7 +53,8 @@ export function filtersText() {
     `💸 Min trading fees: ${fmtSol(strat.min_gmgn_total_fee_sol)} SOL`,
     `🎓 Min grad volume: ${fmtUsd(strat.min_graduated_volume_usd)}`,
     `👥 Min holders: ${strat.min_holders || 'off'}`,
-    `🔝 Max holder: ${strat.max_top20_holder_percent < 100 ? fmtPct(strat.max_top20_holder_percent) : 'off'}`,
+    `🔝 Top20: ${strat.max_top20_holder_percent < 100 ? fmtPct(strat.max_top20_holder_percent) : 'off'}`,
+    `🐋 Whale: ${strat.max_whale_percent != null && strat.max_whale_percent < 100 ? fmtPct(strat.max_whale_percent) : 'off'}`,
     `👛 Min saved holders: ${strat.min_saved_wallet_holders || 'off'}`,
     strat.max_ath_distance_pct < 0 ? `⛰ Max ATH distance: ${strat.max_ath_distance_pct}%` : null,
     lightDivider(),
@@ -310,7 +311,8 @@ export function strategyKeyboard() {
     ],
     [
       { text: `Grad Vol ${fmtUsd(strat.min_graduated_volume_usd)}`, callback_data: 'stratinput:min_graduated_volume_usd' },
-      { text: `Max Holder ${strat.max_top20_holder_percent < 100 ? fmtPct(strat.max_top20_holder_percent) : 'off'}`, callback_data: 'stratinput:max_top20_holder_percent' },
+      { text: `Top20 ${strat.max_top20_holder_percent < 100 ? fmtPct(strat.max_top20_holder_percent) : 'off'}`, callback_data: 'stratinput:max_top20_holder_percent' },
+      { text: `Whale ${strat.max_whale_percent != null && strat.max_whale_percent < 100 ? fmtPct(strat.max_whale_percent) : 'off'}`, callback_data: 'stratinput:max_whale_percent' },
     ],
     [
       { text: `Saved ${strat.min_saved_wallet_holders || 'off'}`, callback_data: 'stratinput:min_saved_wallet_holders' },
