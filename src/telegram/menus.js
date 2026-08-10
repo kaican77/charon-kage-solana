@@ -85,6 +85,7 @@ export const numericFilterLabels = {
   trending_max_bundler_rate: 'maximum trending bundler rate (0.5 = 50%)',
   min_smart_degen_count: 'minimum smart-money wallets (0 = off)',
   min_renowned_count: 'minimum KOL wallets (0 = off)',
+  max_rsi_14: 'maximum RSI 14 (0 = off)',
 };
 
 export const strategyNumericLabels = {
@@ -105,6 +106,7 @@ export const strategyNumericLabels = {
   trending_max_bundler_rate: 'maximum trending bundler rate (0.5 = 50%)',
   min_smart_degen_count: 'minimum smart-money wallets (0 = off)',
   min_renowned_count: 'minimum KOL wallets (0 = off)',
+  max_rsi_14: 'maximum RSI 14 (0 = off)',
   llm_min_confidence: 'LLM minimum confidence percent',
   position_size_sol: 'position size SOL',
   max_open_positions: 'maximum open positions',
@@ -334,6 +336,9 @@ export function strategyKeyboard() {
     [
       { text: `🧠 Smart ${strat.min_smart_degen_count || 'off'}`, callback_data: 'stratinput:min_smart_degen_count' },
       { text: `👑 KOL ${strat.min_renowned_count || 'off'}`, callback_data: 'stratinput:min_renowned_count' },
+    ],
+    [
+      { text: `📉 RSI ≤ ${strat.max_rsi_14 || 'off'}`, callback_data: 'stratinput:max_rsi_14' },
     ],
     [
       { text: `Max Bundler ${fmtPct(strat.trending_max_bundler_rate * 100)}`, callback_data: 'stratinput:trending_max_bundler_rate' },

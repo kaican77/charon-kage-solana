@@ -212,6 +212,40 @@ export async function fetchGmgnRankRow(mint, { interval = '1h', limit = 100 } = 
   }
 }
 
+// Fetch OHLCV candles for a token. Returns [{ time, open, high, low, close, volume }].
+export async function fetchGmgnKline(mint, { resolution = '15m', limit = 30 } = {}) {
+  if (!GMGN_ENABLED) return [];
+  try {
+    const payload = await gmgnFetch('/v1/market/token_kline', {
+      params: { chain: 'sol', address: mint, resolution, limit },
+    });
+    const list = payload?.data?.data?.list || payload?.data?.list || payload?.list || [];
+    return Array.isArray(list) ? list : [];
+  } catch (err) {
+    setGmgnBackoff('trending', err);
+    return [];
+  }
+}
+
+// Wilder-style RSI over the last N closes. Returns null when insufficient data.
+export function calcRsi(closes, period = 14) {
+  if (!Array.isArray(closes) || closes.length < period + 1) return null;
+  const vals = closes.map(Number).filter(Number.isFinite);
+  if (vals.length < period + 1) return null;
+  let gainSum = 0;
+  let lossSum = 0;
+  for (let i = vals.length - period; i < vals.length; i++) {
+    const diff = vals[i] - vals[i - 1];
+    if (diff >= 0) gainSum += diff;
+    else lossSum -= diff;
+  }
+  const avgGain = gainSum / period;
+  const avgLoss = lossSum / period;
+  if (avgLoss === 0) return 100;
+  const rs = avgGain / avgLoss;
+  return 100 - 100 / (1 + rs);
+}
+
 export {
   gmgnFetch,
   fetchGmgnTokenInfo,

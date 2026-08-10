@@ -1,6 +1,6 @@
 import { now, firstPositiveNumber, marketCapFromGmgn, tokenPriceFromGmgn, lamToSol } from '../utils.js';
 import { activeStrategy } from '../db/settings.js';
-import { fetchGmgnTokenInfo, extractSmartFields, fetchGmgnRankRow } from '../enrichment/gmgn.js';
+import { fetchGmgnTokenInfo, extractSmartFields, fetchGmgnRankRow, fetchGmgnKline, calcRsi } from '../enrichment/gmgn.js';
 import { fetchJupiterAsset, fetchJupiterHolders, fetchJupiterChartContext } from '../enrichment/jupiter.js';
 import { fetchSavedWalletExposure } from '../enrichment/wallets.js';
 import { fetchTwitterNarrative } from '../enrichment/twitter.js';
@@ -125,6 +125,10 @@ export function filterCandidate(candidate) {
     if (strat.min_renowned_count > 0 && renowned < strat.min_renowned_count) {
       failures.push(`KOL wallets: ${renowned} < ${strat.min_renowned_count}`);
     }
+    const rsi14 = Number(candidate.metrics.rsi14 ?? 0);
+    if (strat.max_rsi_14 > 0 && Number.isFinite(rsi14) && rsi14 > strat.max_rsi_14) {
+      failures.push(`RSI 14: ${rsi14.toFixed(1)} > ${strat.max_rsi_14}`);
+    }
     if (candidate.trending.is_wash_trading === true || candidate.trending.is_wash_trading === 1) {
       failures.push('trending wash trading');
     }
@@ -170,6 +174,14 @@ export async function buildCandidate({ mint, fee = null, signature = null, gradu
     }
   }
 
+  // RSI 14 enrichment: fetch OHLCV and compute RSI so strategy gates like
+  // max_rsi_14 (Akashi Zone: buy below 50) can work.
+  let rsi14 = null;
+  const candles = await fetchGmgnKline(mint, { resolution: '15m', limit: 30 });
+  if (candles.length) {
+    rsi14 = calcRsi(candles.map(c => c.close), 14);
+  }
+
   const candidate = {
     token: {
       mint,
@@ -199,6 +211,12 @@ export async function buildCandidate({ mint, fee = null, signature = null, gradu
       trendingRatTraderAmountRate: Number(smartFields.rat_trader_amount_rate ?? trendingToken?.rat_trader_amount_rate ?? 0),
       trendingTop10HolderRate: Number(smartFields.top_10_holder_rate ?? trendingToken?.top_10_holder_rate ?? 0),
       trendingDevTeamHoldRate: Number(smartFields.dev_team_hold_rate ?? trendingToken?.dev_team_hold_rate ?? 0),
+      rsi14,
+      athDrawdownPct: (() => {
+        const ath = Number(trendingToken?.history_highest_market_cap || 0);
+        const cur = Number(trendingToken?.market_cap || 0);
+        return ath > 0 && cur > 0 ? (cur / ath - 1) * 100 : null;
+      })(),
     },
     signals: {
       route: signalRoute,
