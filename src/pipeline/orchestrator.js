@@ -1,7 +1,7 @@
 import { now, pruneSeen } from '../utils.js';
 import { numSetting, boolSetting } from '../db/settings.js';
 import { upsertCandidate, updateCandidateStatus, recentEligibleCandidates, candidateById } from '../db/candidates.js';
-import { storeDecision, storeBatchDecision, logDecisionEvent } from '../db/decisions.js';
+import { storeDecision, storeBatchDecision, logDecisionEvent, checkDecisionCache } from '../db/decisions.js';
 import { buildCandidate, filterCandidate, signalLabel } from './candidateBuilder.js';
 import { decideCandidateBatch } from './llm.js';
 import { activeStrategy } from '../db/settings.js';
@@ -60,8 +60,31 @@ export async function processCandidateFromSignals(signals) {
   } else {
     const strat = activeStrategy();
     rows = recentEligibleCandidates(strat.llm_candidate_pick_count ?? numSetting('llm_candidate_pick_count', 10));
-    batchDecision = await decideCandidateBatch(rows, candidateId);
-    batchId = storeBatchDecision(candidateId, rows, batchDecision);
+    // Drop candidates whose WATCH/PASS verdict is still cached (no LLM call needed).
+    // BUY candidates are never cached, so they always reach the LLM.
+    const uncachedRows = rows.filter((row) => {
+      const mint = row.candidate?.token?.mint;
+      if (!mint) return true;
+      const cached = checkDecisionCache(mint, row.candidate?.metrics?.marketCapUsd, row.candidate?.metrics?.holderCount);
+      if (!cached) return true;
+      console.log(`[cache] ${mint.slice(0, 8)}... hit (${cached.verdict} conf=${cached.confidence} ttl until ${new Date(cached.expiresAt).toISOString()})`);
+      return false;
+    });
+    if (uncachedRows.length === 0) {
+      console.log('[cache] all candidates cached — skipping LLM batch');
+      batchDecision = {
+        verdict: 'WATCH',
+        confidence: 0,
+        selected_row: null,
+        reason: 'All candidates had cached WATCH/PASS verdicts; no LLM call made.',
+        risks: ['all_cached'],
+        suggested_tp_percent: strat.tp_percent ?? numSetting('default_tp_percent', 50),
+        suggested_sl_percent: strat.sl_percent ?? numSetting('default_sl_percent', -25),
+      };
+    } else {
+      batchDecision = await decideCandidateBatch(uncachedRows, candidateId);
+    }
+    batchId = storeBatchDecision(candidateId, uncachedRows.length ? uncachedRows : rows, batchDecision);
   }
   const selectedRow = batchDecision.selected_row;
   const selectedThisCandidate = selectedRow?.id === candidateId;

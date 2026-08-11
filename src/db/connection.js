@@ -198,6 +198,20 @@ export function initDb() {
     CREATE INDEX IF NOT EXISTS idx_decision_logs_mint ON decision_logs(selected_mint);
     CREATE INDEX IF NOT EXISTS idx_signal_events_mint ON signal_events(mint);
     CREATE INDEX IF NOT EXISTS idx_learning_lessons_status ON learning_lessons(status, created_at_ms);
+
+    CREATE TABLE IF NOT EXISTS decision_cache (
+      mint TEXT PRIMARY KEY,
+      verdict TEXT NOT NULL,
+      confidence REAL NOT NULL,
+      reason TEXT,
+      route TEXT,
+      created_at_ms INTEGER NOT NULL,
+      expires_at_ms INTEGER NOT NULL,
+      mcap_snapshot REAL,
+      holders_snapshot INTEGER,
+      liq_snapshot REAL
+    );
+    CREATE INDEX IF NOT EXISTS idx_decision_cache_expires ON decision_cache(expires_at_ms);
   `);
   ensureColumn('candidates', 'signal_key', 'TEXT');
   db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_candidates_signal_key ON candidates(signal_key) WHERE signal_key IS NOT NULL');
@@ -276,6 +290,9 @@ export function initDb() {
     sl_percent: -20,
     trailing_enabled: true,
     trailing_percent: 15,
+    trailing_tight_from_percent: 40,
+    trailing_tight_percent: 5,
+    trailing_floor_percent: 8,
     partial_tp: false,
     partial_tp_at_percent: 0,
     partial_tp_sell_percent: 0,
@@ -312,6 +329,9 @@ export function initDb() {
     sl_percent: -25,
     trailing_enabled: false,
     trailing_percent: 0,
+    trailing_tight_from_percent: 40,
+    trailing_tight_percent: 5,
+    trailing_floor_percent: 8,
     partial_tp: true,
     partial_tp_at_percent: 100,
     partial_tp_sell_percent: 50,
@@ -349,6 +369,9 @@ export function initDb() {
     sl_percent: -85,
     trailing_enabled: true,
     trailing_percent: 15,
+    trailing_tight_from_percent: 40,
+    trailing_tight_percent: 5,
+    trailing_floor_percent: 8,
     partial_tp: true,
     partial_tp_at_percent: 25,
     partial_tp_sell_percent: 30,

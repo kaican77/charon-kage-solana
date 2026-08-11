@@ -134,7 +134,26 @@ export async function refreshPosition(position, { autoExit = true, jupiterPnl = 
   const slHit = pnlPercent <= Number(tpSl.sl_percent);
   const trailingArmed = position.trailing_armed || (tpSl.trailing_enabled && tpHit);
   const trailDrop = highWaterMcap > 0 ? (Number(mcap) / highWaterMcap - 1) * 100 : 0;
-  const trailingHit = trailingArmed && tpSl.trailing_enabled && trailDrop <= -Math.abs(Number(tpSl.trailing_percent));
+
+  // Tight-trail + floor guard (ported from kaiserern/Kaiser.charon).
+  // (1) TIGHT TRAIL: once peak pnl >= tight-from (default 40%), trail squeeze
+  //     from trailing_percent to tight-percent (default 5%). Prevents armed
+  //     winners from round-tripping back to SL.
+  // (2) FLOOR: once armed, trailing may not exit below floor-percent (+8%).
+  //     Kills "gap-dump between ticks" exits that lock in tiny profit before
+  //     the runner continues.
+  const stratForTrail = strategyById(position.strategy_id);
+  const tightFrom = Number(stratForTrail?.trailing_tight_from_percent ?? 40);
+  const tightPct = Number(stratForTrail?.trailing_tight_percent ?? 5);
+  const floorPct = Number(stratForTrail?.trailing_floor_percent ?? 8);
+  const peakPnl = position.high_water_mcap > 0 && position.entry_mcap > 0
+    ? (position.high_water_mcap / position.entry_mcap - 1) * 100
+    : pnlPercent;
+  const effectiveTrailPct = peakPnl >= tightFrom ? tightPct : Math.abs(Number(tpSl.trailing_percent));
+  const trailingHit = trailingArmed
+    && tpSl.trailing_enabled
+    && pnlPercent >= floorPct
+    && trailDrop <= -effectiveTrailPct;
   let exitReason = null;
   let closed = false;
 

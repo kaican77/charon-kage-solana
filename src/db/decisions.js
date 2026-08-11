@@ -16,7 +16,70 @@ export function storeDecision(candidateId, candidate, decision) {
     json(decision.risks || []),
     json(decision),
   );
+
+  // Cache WATCH/PASS verdicts so we don't re-ask the LLM for the same mint in
+  // the next 10/60 min unless the market has moved meaningfully. This cuts
+  // redundant LLM calls by ~60-70% per kaiserern's measurements.
+  if (decision.verdict === 'WATCH' || decision.verdict === 'PASS') {
+    cacheDecision(candidate, decision);
+  }
+
   return Number(result.lastInsertRowid);
+}
+
+export function cacheDecision(candidate, decision) {
+  const cacheTtlMs = decision.verdict === 'PASS' ? 60 * 60 * 1000 : 10 * 60 * 1000;
+  const nowMs = now();
+  db.prepare(`
+    INSERT OR REPLACE INTO decision_cache
+    (mint, verdict, confidence, reason, route, created_at_ms, expires_at_ms, mcap_snapshot, holders_snapshot, liq_snapshot)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    candidate.token.mint,
+    decision.verdict,
+    decision.confidence,
+    decision.reason || null,
+    candidate.signals?.route || null,
+    nowMs,
+    nowMs + cacheTtlMs,
+    candidate.metrics?.marketCapUsd || null,
+    candidate.metrics?.holderCount || null,
+    candidate.metrics?.liquidityUsd || null,
+  );
+}
+
+export function checkDecisionCache(mint, currentMcap = null, currentHolders = null) {
+  const cached = db.prepare(`
+    SELECT * FROM decision_cache
+    WHERE mint = ? AND expires_at_ms > ?
+    LIMIT 1
+  `).get(mint, now());
+
+  if (!cached) return null;
+
+  // Invalidate if market moved meaningfully since cache.
+  if (currentMcap && cached.mcap_snapshot) {
+    const mcapChange = Math.abs((currentMcap - cached.mcap_snapshot) / cached.mcap_snapshot);
+    if (mcapChange > 0.20) return null;
+  }
+  if (currentHolders && cached.holders_snapshot) {
+    const holderChange = Math.abs((currentHolders - cached.holders_snapshot) / cached.holders_snapshot);
+    if (holderChange > 0.30) return null;
+  }
+
+  return {
+    verdict: cached.verdict,
+    confidence: cached.confidence,
+    reason: cached.reason,
+    route: cached.route,
+    cachedAt: cached.created_at_ms,
+    expiresAt: cached.expires_at_ms,
+  };
+}
+
+export function pruneExpiredCache() {
+  const result = db.prepare('DELETE FROM decision_cache WHERE expires_at_ms < ?').run(now());
+  return result.changes;
 }
 
 export function storeBatchDecision(triggerCandidateId, rows, batchDecision) {

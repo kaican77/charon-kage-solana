@@ -1,6 +1,7 @@
 import { setDefaultResultOrder } from 'node:dns';
 import { APP_NAME, SIGNAL_SERVER_URL, SIGNAL_POLL_MS, GRADUATED_POLL_MS, TRENDING_POLL_MS, POSITION_CHECK_MS, validateConfig } from './config.js';
 import { initDb, db } from './db/connection.js';
+import { pruneExpiredCache } from './db/decisions.js';
 import { numSetting } from './db/settings.js';
 import { initLiveExecution } from './liveExecutor.js';
 import { setupTelegram } from './telegram/commands.js';
@@ -59,6 +60,7 @@ export async function startCharon() {
     setAlertHandler(processCandidateFromSignals);
     setInterval(() => trackDip(() => monitorPriceAlerts()), 10_000);
     setInterval(() => cleanupAlerts(), 60 * 60 * 1000);
+    setInterval(() => { const n = pruneExpiredCache(); if (n > 0) console.log(`[cache] pruned ${n} expired decision_cache entries`); }, 30 * 60 * 1000);
 
     console.log(`[bot] ${APP_NAME} started (server mode: ${SIGNAL_SERVER_URL})`);
   } else {
