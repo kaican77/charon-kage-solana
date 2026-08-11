@@ -118,6 +118,9 @@ export const strategyNumericLabels = {
   partial_tp_sell_percent: 'partial TP sell percent',
   max_hold_ms: 'maximum hold milliseconds',
   timeframe: 'screening timeframe (5m or 15m)',
+  supertrend_period: 'supertrend ATR period (default 10)',
+  supertrend_multiplier: 'supertrend ATR multiplier (default 3)',
+  supertrend_buy_distance_pct: 'supertrend buy distance percent (max % above line, default 3)',
 };
 
 export function filtersKeyboard() {
@@ -275,6 +278,7 @@ export function strategyMenuText() {
     strat.use_llm ? `🧠 LLM: ✅ yes (min ${strat.llm_min_confidence}%)` : '🧠 LLM: ❌ no (rule-based)',
     strat.requiresDlmmPool ? '💠 DLMM pool required' : null,
     strat.timeframe ? `📊 TF: ${strat.timeframe}` : null,
+    strat.supertrend_enabled ? `📈 Supertrend: on (period ${strat.supertrend_period ?? 10} × ${strat.supertrend_multiplier ?? 3}, dist ≤ ${strat.supertrend_buy_distance_pct ?? 3}%)` : null,
     divider(),
     ...all.map(s => `${s.enabled ? '▶' : '○'} ${STRAT_ICONS[s.id] || '🎯'} ${s.name}`),
   ].filter(Boolean).join('\n');
@@ -347,6 +351,10 @@ export function strategyKeyboard() {
     [
       { text: `📊 TF ${strat.timeframe || '5m'}`, callback_data: 'stratinput:timeframe' },
       { text: `💠 DLMM ${strat.requiresDlmmPool ? 'on' : 'off'}`, callback_data: 'stratcfg:requiresDlmmPool' },
+    ],
+    [
+      { text: `📈 ST ${strat.supertrend_enabled ? 'on' : 'off'}`, callback_data: 'stratcfg:supertrend_enabled' },
+      { text: `📏 ST Dist ${strat.supertrend_buy_distance_pct ?? 3}%`, callback_data: 'stratinput:supertrend_buy_distance_pct' },
     ],
     [
       { text: `Max Bundler ${fmtPct(strat.trending_max_bundler_rate * 100)}`, callback_data: 'stratinput:trending_max_bundler_rate' },

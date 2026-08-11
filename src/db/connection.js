@@ -436,6 +436,12 @@ export function initDb() {
     llm_candidate_pick_count: 10,
     // Timeframe preference (5m or 15m); used for screening/resolution.
     timeframe: '5m',
+    // Supertrend buy zone: price must be in an uptrend (above the line) and
+    // within supertrend_buy_distance_pct% of the supertrend line (touching/near).
+    supertrend_enabled: true,
+    supertrend_period: 10,
+    supertrend_multiplier: 3,
+    supertrend_buy_distance_pct: 3,
   }), ts);
 
   // Migration: remove retired strategies from existing DBs
