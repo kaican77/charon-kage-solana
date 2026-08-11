@@ -31,26 +31,37 @@ export function activeStrategy() {
     if (fallback) return fallback;
     return defaultStrategy();
   }
-  const config = { id: row.id, name: row.name, ...JSON.parse(row.config_json) };
+  const cfg = JSON.parse(row.config_json);
+  delete cfg.enabled;
   strategyCache.id = row.id;
-  strategyCache.config = config;
+  strategyCache.config = { id: row.id, name: row.name, ...cfg };
   strategyCache.at = Date.now();
-  return config;
+  return strategyCache.config;
 }
 
 export function strategyById(id) {
   const row = db.prepare('SELECT * FROM strategies WHERE id = ?').get(id);
   if (!row) return null;
-  return { id: row.id, name: row.name, ...JSON.parse(row.config_json) };
+  const cfg = JSON.parse(row.config_json);
+  delete cfg.enabled;
+  return { id: row.id, name: row.name, ...cfg };
 }
 
 export function allStrategies() {
-  return db.prepare('SELECT * FROM strategies ORDER BY id').all().map(row => ({
-    id: row.id,
-    name: row.name,
-    enabled: Boolean(row.enabled),
-    ...JSON.parse(row.config_json),
-  }));
+  return db.prepare('SELECT * FROM strategies ORDER BY id').all().map(row => {
+    const cfg = JSON.parse(row.config_json);
+    // Delete any stale `enabled` key from config_json — the column is the
+    // source of truth for `enabled`. Stale config keys (left over from older
+    // code that did `{ ...strategyById(id), ...newFields }`) used to shadow
+    // the column and produce wrong values in the Telegram menu.
+    delete cfg.enabled;
+    return {
+      id: row.id,
+      name: row.name,
+      enabled: Boolean(row.enabled),
+      ...cfg,
+    };
+  });
 }
 
 export function setActiveStrategy(id) {
