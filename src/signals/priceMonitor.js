@@ -17,7 +17,7 @@ export function storePriceAlert({ mint, strategyId, alertType, targetPriceUsd, t
   if (existing) return existing.id;
 
   const recent = db.prepare(
-    "SELECT id FROM price_alerts WHERE mint = ? AND status IN ('triggered', 'expired') AND created_at_ms > ? LIMIT 1"
+    "SELECT id FROM price_alerts WHERE mint = ? AND status IN ('triggered', 'expired') AND COALESCE(triggered_at_ms, created_at_ms) > ? LIMIT 1"
   ).get(mint, now() - 10 * 60 * 1000);
   if (recent) return recent.id;
 
