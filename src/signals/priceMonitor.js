@@ -90,22 +90,28 @@ export async function monitorPriceAlerts() {
 
       if (shouldTrigger && candidateHandler) {
         const signal = JSON.parse(alert.signals_json || '{}');
-        await candidateHandler({
-          mint: alert.mint,
-          fee: signal.feeClaim ? {
-            mint: alert.mint,
-            distributed: BigInt(Math.floor(signal.feeClaim.distributedSol * 1e9)),
-            shareholders: (signal.feeClaim.shareholders || []).map(h => ({ pubkey: h.address, bps: h.bps })),
-          } : null,
-          signature: signal.feeClaim?.signature || null,
-          graduatedCoin: signal.graduated || null,
-          trendingToken: signal.trending || null,
-          route: `dip_${alert.strategy_id}`,
-        });
-
+        // Mark triggered FIRST so a throw inside candidateHandler can't cause
+        // this alert to re-trigger next cycle (was the root of 4x dip spam).
         db.prepare("UPDATE price_alerts SET status = 'triggered', triggered_at_ms = ? WHERE id = ?").run(now(), alert.id);
         triggered++;
         console.log(`[dip] triggered ${alert.mint.slice(0, 8)}... at $${currentPrice.toFixed(8)} (target: $${alert.target_price_usd?.toFixed(8)})`);
+        try {
+          await candidateHandler({
+            mint: alert.mint,
+            fee: signal.feeClaim ? {
+              mint: alert.mint,
+              distributed: BigInt(Math.floor(signal.feeClaim.distributedSol * 1e9)),
+              shareholders: (signal.feeClaim.shareholders || []).map(h => ({ pubkey: h.address, bps: h.bps })),
+            } : null,
+            signature: signal.feeClaim?.signature || null,
+            graduatedCoin: signal.graduated || null,
+            trendingToken: signal.trending || null,
+            route: `dip_${alert.strategy_id}`,
+          });
+        } catch (handlerErr) {
+          // Candidate build errors shouldn't crash the alert loop or re-trigger.
+          console.log(`[dip] handler error for ${alert.mint.slice(0, 8)}...: ${handlerErr.message}`);
+        }
       }
     } catch (err) {
       console.log(`[dip] alert ${alert.id} error: ${err.message}`);
