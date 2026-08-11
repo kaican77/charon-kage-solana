@@ -72,6 +72,12 @@ export function setActiveStrategy(id) {
 }
 
 export function updateStrategyConfig(id, config) {
+  // Defensive: config MUST be a plain object. A string/number/array spread
+  // into `{ ...clean }` silently corrupts config_json (e.g. {"0":"t","1":"r"}).
+  // Refuse invalid input instead of writing garbage to the DB.
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    throw new Error(`updateStrategyConfig(${id}): config must be a plain object, got ${typeof config}`);
+  }
   // Strip `enabled` if it leaked in — column is the source of truth.
   const { enabled: _ignored, ...clean } = config;
   db.prepare('UPDATE strategies SET config_json = ? WHERE id = ?').run(JSON.stringify(clean), id);
