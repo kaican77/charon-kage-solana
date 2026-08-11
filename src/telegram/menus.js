@@ -445,6 +445,9 @@ export function positionButtons(positionId) {
           { text: '⌨️ Custom TP/SL', callback_data: `posinput:${positionId}` },
         ],
         [
+          { text: '🖼 PnL Card', callback_data: `card:${positionId}` },
+        ],
+        [
           { text: '📍 Positions', callback_data: 'menu:positions' },
           { text: '🏠 Main Menu', callback_data: 'menu:main' },
         ],
