@@ -58,10 +58,13 @@ export async function monitorPriceAlerts() {
   const alerts = getActiveAlerts();
   if (!alerts.length) return;
 
+  // Free-tier guard: process at most 25 alerts per cycle. With hundreds of
+  // pending dip alerts, fetching Jupiter for all of them every 10s = 429 storm.
+  const batch = alerts.slice(0, 25);
   let triggered = 0;
   let expired = 0;
 
-  for (const alert of alerts) {
+  for (const alert of batch) {
     // Check if expired
     if (now() > alert.expires_at_ms) {
       db.prepare("UPDATE price_alerts SET status = 'expired' WHERE id = ?").run(alert.id);

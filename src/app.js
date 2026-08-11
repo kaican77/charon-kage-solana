@@ -58,7 +58,7 @@ export async function startCharon() {
     const { monitorPriceAlerts, cleanupAlerts } = await import('./signals/priceMonitor.js');
     const { setCandidateHandler: setAlertHandler } = await import('./signals/priceMonitor.js');
     setAlertHandler(processCandidateFromSignals);
-    setInterval(() => trackDip(() => monitorPriceAlerts()), 10_000);
+    setInterval(() => trackDip(() => monitorPriceAlerts()), 30_000);
     setInterval(() => cleanupAlerts(), 60 * 60 * 1000);
     setInterval(() => { const n = pruneExpiredCache(); if (n > 0) console.log(`[cache] pruned ${n} expired decision_cache entries`); }, 30 * 60 * 1000);
 
