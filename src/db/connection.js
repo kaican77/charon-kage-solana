@@ -391,6 +391,53 @@ export function initDb() {
     llm_min_confidence: 70,
   }), ts);
 
+  stratInsert.run('dlmm_pool', 'DLMM Pool', 0, JSON.stringify({
+    entry_mode: 'immediate',
+    min_source_count: 1,
+    require_fee_claim: false,
+    token_age_max_ms: 86400000,
+    // DLMM gate: candidate must have a Meteora DLMM pool
+    requiresDlmmPool: true,
+    min_mcap_usd: 250000,
+    max_mcap_usd: 5000000,
+    min_fee_claim_sol: 0,
+    min_gmgn_total_fee_sol: 0,
+    min_holders: 0,
+    holder_deadzone_low: 100,
+    holder_deadzone_high: 400,
+    holder_deadzone_size_cut_percent: 0,
+    max_top20_holder_percent: 100,
+    min_saved_wallet_holders: 0,
+    max_ath_distance_pct: 0,
+    min_graduated_volume_usd: 0,
+    // Bundler cap 50%; rug history up to 100% acceptable (no rug gate)
+    trending_min_volume_usd: 0,
+    trending_min_swaps: 0,
+    trending_max_rug_ratio: 1,
+    trending_max_bundler_rate: 0.5,
+    min_smart_degen_count: 0,
+    min_renowned_count: 0,
+    max_rsi_14: 0,
+    position_size_sol: 0.1,
+    max_open_positions: 10,
+    tp_percent: 30,
+    sl_percent: -20,
+    trailing_enabled: true,
+    trailing_percent: 15,
+    trailing_tight_from_percent: 40,
+    trailing_tight_percent: 5,
+    trailing_floor_percent: 8,
+    partial_tp: false,
+    partial_tp_at_percent: 0,
+    partial_tp_sell_percent: 0,
+    max_hold_ms: 0,
+    use_llm: true,
+    llm_min_confidence: 60,
+    llm_candidate_pick_count: 10,
+    // Timeframe preference (5m or 15m); used for screening/resolution.
+    timeframe: '5m',
+  }), ts);
+
   // Migration: remove retired strategies from existing DBs
   db.prepare("DELETE FROM strategies WHERE id IN ('sniper', 'degen')").run();
 }

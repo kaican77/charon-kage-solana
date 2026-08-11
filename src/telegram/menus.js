@@ -10,6 +10,7 @@ const STRAT_ICONS = {
   dip_buy: '📉',
   smart_money: '🧠',
   akashi_zone: '⚡',
+  dlmm_pool: '💠',
 };
 
 const STRAT_EMOJI = {
@@ -116,6 +117,7 @@ export const strategyNumericLabels = {
   partial_tp_at_percent: 'partial TP trigger percent',
   partial_tp_sell_percent: 'partial TP sell percent',
   max_hold_ms: 'maximum hold milliseconds',
+  timeframe: 'screening timeframe (5m or 15m)',
 };
 
 export function filtersKeyboard() {
@@ -271,6 +273,8 @@ export function strategyMenuText() {
     strat.partial_tp ? `🪓 Partial TP: ${strat.partial_tp_sell_percent}% at ${fmtPct(strat.partial_tp_at_percent)}` : null,
     strat.max_hold_ms > 0 ? `⏱ Max hold: ${Math.round(strat.max_hold_ms / 60000)}m` : null,
     strat.use_llm ? `🧠 LLM: ✅ yes (min ${strat.llm_min_confidence}%)` : '🧠 LLM: ❌ no (rule-based)',
+    strat.requiresDlmmPool ? '💠 DLMM pool required' : null,
+    strat.timeframe ? `📊 TF: ${strat.timeframe}` : null,
     divider(),
     ...all.map(s => `${s.enabled ? '▶' : '○'} ${STRAT_ICONS[s.id] || '🎯'} ${s.name}`),
   ].filter(Boolean).join('\n');
@@ -339,6 +343,10 @@ export function strategyKeyboard() {
     ],
     [
       { text: `📉 RSI ≤ ${strat.max_rsi_14 || 'off'}`, callback_data: 'stratinput:max_rsi_14' },
+    ],
+    [
+      { text: `📊 TF ${strat.timeframe || '5m'}`, callback_data: 'stratinput:timeframe' },
+      { text: `💠 DLMM ${strat.requiresDlmmPool ? 'on' : 'off'}`, callback_data: 'stratcfg:requiresDlmmPool' },
     ],
     [
       { text: `Max Bundler ${fmtPct(strat.trending_max_bundler_rate * 100)}`, callback_data: 'stratinput:trending_max_bundler_rate' },

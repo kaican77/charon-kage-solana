@@ -37,6 +37,11 @@ export function filterCandidate(candidate) {
   const maxWhale = candidate.holders?.maxHolderPercent ?? null;
   const savedCount = candidate.savedWalletExposure.holderCount;
   const feeSol = candidate.feeClaim?.distributedSol;
+
+  // ── DLMM pool gate ───────────────────────────────────────────────
+  if (strat.requiresDlmmPool && !candidate.dlmmPool) {
+    failures.push(`missing DLMM pool`);
+  }
   const holderCount = Number(candidate.metrics.holderCount || 0);
   const trendingVolume = Number(candidate.trending?.volume ?? 0);
   const trendingSwaps = Number(candidate.trending?.swaps ?? 0);
@@ -169,6 +174,19 @@ export async function buildCandidate({ mint, fee = null, signature = null, gradu
   const holders = needAsset ? await fetchJupiterHolders(mint) : null;
   const chart = needAsset ? await fetchJupiterChartContext(mint) : null;
   const savedWalletExposure = await fetchSavedWalletExposure(mint, holders);
+  // DLMM pool detection (if strategy requires it)
+  let dlmmPool = null;
+  if (strat.requires_dlmm_pool) {
+    try {
+      const { fetchDlmmPoolInfo } = await import('../enrichment/dlmmPool.js');
+      dlmmPool = await fetchDlmmPoolInfo(mint);
+      if (!dlmmPool) {
+        console.log(`[dlmm] no DLMM pool for ${mint.slice(0, 8)}...`);
+      }
+    } catch (err) {
+      console.log(`[dlmm] fetch error for ${mint.slice(0, 8)}...: ${err.message}`);
+    }
+  }
   const twitterNarrative = await fetchTwitterNarrative(graduatedCoin || jupiterAsset, gmgn);
   const priceUsd = firstPositiveNumber(tokenPriceFromGmgn(gmgn), jupiterAsset?.usdPrice, trendingToken?.price);
   const marketCapUsd = firstPositiveNumber(
@@ -265,6 +283,7 @@ export async function buildCandidate({ mint, fee = null, signature = null, gradu
     chart,
     savedWalletExposure,
     twitterNarrative,
+    dlmmPool,
     createdAtMs: now(),
   };
   candidate.filters = filterCandidate(candidate);
