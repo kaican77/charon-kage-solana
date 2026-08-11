@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0b0e14; font-family:-apple-system,'Segoe UI',Roboto,sans-serif; padding:0; }
+  .card {
+    width:640px; height:640px;
+    background:linear-gradient(180deg,#141a26 0%,#10141d 100%);
+    border:1px solid #232c3d;
+    border-radius:16px;
+    padding:36px 34px;
+    color:#e8ecf3;
+    display:flex; flex-direction:column;
+    box-shadow:0 8px 32px rgba(0,0,0,.5);
+  }
+  .h { display:flex; align-items:center; gap:10px; }
+  .dot { width:12px; height:12px; border-radius:50%; background:#3b82f6; box-shadow:0 0 8px #3b82f6; }
+  .title { font-size:22px; font-weight:800; color:#fff; }
+  .id { font-size:14px; color:#5b6b8c; font-weight:600; }
+  .sub { color:#8b93a7; font-size:14px; margin-top:8px; }
+  .div { height:1px; background:#232c3d; margin:20px 0; }
+  .f { display:flex; justify-content:space-between; padding:6px 0; font-size:16px; }
+  .lbl { color:#9aa3b8; }
+  .val { font-weight:700; color:#f1f4fa; }
+  .spark-wrap { margin:10px 0 4px; }
+  .pnl-row { display:flex; justify-content:space-between; align-items:center; margin-top:auto; padding-top:8px; }
+  .size { color:#9aa3b8; font-size:15px; }
+  .size b { color:#f1f4fa; }
+  .pnl { font-size:24px; font-weight:800; color:#22c55e; }
+  .pills { display:flex; gap:10px; margin-top:14px; }
+  .pill { flex:1; text-align:center; padding:8px 0; border-radius:10px; font-size:13px; font-weight:700; background:#1e293b; }
+  .pill.tp { color:#fbbf24; } .pill.sl { color:#f87171; } .pill.tr { color:#38bdf8; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="h"><span class="dot"></span><span class="title">FIRETAKE</span><span class="id">#42</span></div>
+  <div class="sub">F1R3T4…90ab · ⚡ akashi_zone · 🟢 dry_run</div>
+  <div class="div"></div>
+  <div class="f"><span class="lbl">💰 Entry mcap</span><span class="val">$125.0K</span></div>
+  <div class="f"><span class="lbl">⬆️ ATH mcap</span><span class="val">$198.0K</span></div>
+  <div class="f"><span class="lbl">💵 Current mcap</span><span class="val">$187.0K</span></div>
+  <div class="spark-wrap">
+    <svg width="572" height="70" viewBox="0 0 572 70" fill="none">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#22c55e" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="M0,55 L64,50 L127,41 L191,45 L255,28 L318,15 L382,9 L445,4 L509,6 L572,5 L572,70 L0,70 Z" fill="url(#g)"/>
+      <polyline points="0,55 64,50 127,41 191,45 255,28 318,15 382,9 445,4 509,6 572,5" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+  <div class="div"></div>
+  <div class="pnl-row">
+    <span class="size">💸 Size: <b>0.5000 SOL</b></span>
+    <span class="pnl">🟢 +49.6%</span>
+  </div>
+  <div class="pills">
+    <span class="pill tp">🎯 TP 100%</span>
+    <span class="pill sl">🚨 SL -50%</span>
+    <span class="pill tr">📉 Trail 16%</span>
+  </div>
+</div>
+</body>
+</html>

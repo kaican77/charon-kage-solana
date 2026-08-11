@@ -17,6 +17,22 @@ export async function sendTelegram(text, extra = {}) {
   });
 }
 
+// Terminal-style PNG PnL card (operator picked this aesthetic).
+async function sendPositionCard(position, caption) {
+  try {
+    const { renderTerminalCard } = await import('../cards/terminalCard.js');
+    const png = await renderTerminalCard(position);
+    return bot.sendPhoto(TELEGRAM_CHAT_ID, png, {
+      caption,
+      parse_mode: 'HTML',
+      ...(TELEGRAM_TOPIC_ID ? { message_thread_id: Number(TELEGRAM_TOPIC_ID) } : {}),
+    });
+  } catch (err) {
+    console.log(`[card] render failed: ${err.message}`);
+    return null;
+  }
+}
+
 export async function sendCandidateAlert(candidateId, candidate, decision) {
   const sent = await sendTelegram(candidateSummary(candidate, decision), candidateButtons(candidateId, decision));
   db.prepare(`
@@ -69,12 +85,17 @@ export async function sendBatch(chatId, batchId) {
 export async function sendPositionOpen(positionId) {
   const position = db.prepare('SELECT * FROM dry_run_positions WHERE id = ?').get(positionId);
   const label = position?.execution_mode === 'live' ? 'Live buy executed' : 'Dry-run buy stored';
-  if (position) await sendTelegram(`✅ <b>${label}</b>\n\n${formatPosition(position)}`, positionButtons(positionId));
+  if (!position) return;
+  const card = await sendPositionCard(position, `✅ <b>${label}</b>\n\n${formatPosition(position)}`);
+  if (!card) await sendTelegram(`✅ <b>${label}</b>\n\n${formatPosition(position)}`, positionButtons(positionId));
 }
 
 export async function sendPositionExit(position) {
   const label = position?.execution_mode === 'live' ? 'Live exit' : 'Dry-run exit';
-  await sendTelegram(`🏁 <b>${label}: ${escapeHtml(position.exitReason)}</b>\n\n${formatPosition({ ...position, status: 'closed' })}`);
+  const closed = { ...position, status: 'closed' };
+  const caption = `🏁 <b>${label}: ${escapeHtml(position.exitReason)}</b>\n\n${formatPosition(closed)}`;
+  const card = await sendPositionCard(closed, caption);
+  if (!card) await sendTelegram(caption);
 }
 
 export async function sendTradeIntent(intentId, candidate, decision) {

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0b0e14; font-family:-apple-system,'Segoe UI',Roboto,sans-serif; padding:24px; }
+  .card { width:680px; margin-bottom:40px; }
+  .label { color:#5b6b8c; font-size:13px; margin-bottom:8px; font-weight:600; }
+
+  /* ===== OPSI 1: MINIMAL DARK (flat, tanpa gradient) ===== */
+  .v1 { background:#10141d; border:1px solid #232c3d; border-radius:14px; padding:20px 22px; color:#e8ecf3; }
+  .v1 .h { display:flex; align-items:center; gap:8px; }
+  .v1 .dot { width:10px; height:10px; border-radius:50%; background:#3b82f6; }
+  .v1 .title { font-size:18px; font-weight:800; }
+  .v1 .sub { color:#8b93a7; font-size:12.5px; margin-top:3px; }
+  .v1 .div { height:1px; background:#1c2333; margin:12px 0; }
+  .v1 .f { display:flex; justify-content:space-between; padding:3px 0; font-size:14px; }
+  .v1 .lbl { color:#9aa3b8; }
+  .v1 .val { font-weight:600; }
+  .v1 .pnl { font-size:16px; font-weight:800; color:#22c55e; }
+  .v1 .pill { display:inline-block; padding:2px 10px; border-radius:20px; font-size:12px; background:#1e293b; }
+  .v1 .pill.tp { color:#fbbf24; } .v1 .pill.sl { color:#f87171; } .v1 .pill.tr { color:#38bdf8; }
+
+  /* ===== OPSI 2: COMPACT (kecil, semua 1 blok) ===== */
+  .v2 { background:#0f131c; border:1px solid #1f2837; border-radius:10px; padding:14px 16px; color:#dfe6f0; }
+  .v2 .h { display:flex; align-items:center; gap:6px; font-size:15px; font-weight:700; }
+  .v2 .dot { width:8px; height:8px; border-radius:50%; background:#3b82f6; }
+  .v2 .line { font-size:13px; color:#aab4c8; padding:2px 0; }
+  .v2 .pnl { float:right; font-weight:800; color:#22c55e; font-size:14px; }
+
+  /* ===== OPSI 3: LIGHT THEME ===== */
+  .v3 { background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:20px 22px; color:#1e293b; box-shadow:0 4px 16px rgba(0,0,0,.15); }
+  .v3 .h { display:flex; align-items:center; gap:8px; }
+  .v3 .dot { width:10px; height:10px; border-radius:50%; background:#3b82f6; }
+  .v3 .title { font-size:18px; font-weight:800; }
+  .v3 .sub { color:#64748b; font-size:12.5px; margin-top:3px; }
+  .v3 .div { height:1px; background:#e2e8f0; margin:12px 0; }
+  .v3 .f { display:flex; justify-content:space-between; padding:3px 0; font-size:14px; }
+  .v3 .lbl { color:#64748b; }
+  .v3 .val { font-weight:700; }
+  .v3 .pnl { font-size:16px; font-weight:800; color:#16a34a; }
+  .v3 .pill { display:inline-block; padding:2px 10px; border-radius:20px; font-size:12px; background:#f1f5f9; color:#475569; }
+
+  /* ===== OPSI 4: MONOCHROME MINIMAL (hitam-putih) ===== */
+  .v4 { background:#0a0a0a; border:1px solid #333; border-radius:10px; padding:18px 20px; color:#f5f5f5; }
+  .v4 .h { display:flex; align-items:center; gap:8px; }
+  .v4 .dot { width:10px; height:10px; border-radius:50%; background:#f5f5f5; }
+  .v4 .title { font-size:17px; font-weight:800; letter-spacing:.5px; }
+  .v4 .sub { color:#999; font-size:12.5px; margin-top:3px; }
+  .v4 .div { height:1px; background:#2a2a2a; margin:11px 0; }
+  .v4 .f { display:flex; justify-content:space-between; padding:3px 0; font-size:13.5px; }
+  .v4 .lbl { color:#888; }
+  .v4 .val { font-weight:600; }
+  .v4 .pnl { font-size:15px; font-weight:800; color:#fff; }
+  .v4 .pill { display:inline-block; padding:2px 10px; border-radius:20px; font-size:12px; border:1px solid #444; color:#ccc; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="label">OPSI 1 · Minimal Dark</div>
+  <div class="v1">
+    <div class="h"><span class="dot"></span><span class="title">FIRETAKE</span><span style="color:#5b6b8c;font-size:13px">#42</span></div>
+    <div class="sub">F1R3T4…90ab · ⚡ akashi_zone · 🟢 dry_run</div>
+    <div class="div"></div>
+    <div class="f"><span class="lbl">💰 Entry</span><span class="val">$125.0K</span></div>
+    <div class="f"><span class="lbl">⬆️ ATH</span><span class="val">$198.0K</span></div>
+    <div class="f"><span class="lbl">💵 Current</span><span class="val">$187.0K</span></div>
+    <div class="div"></div>
+    <div class="f"><span class="lbl">💸 0.5000 SOL</span><span class="pnl">🟢 +49.6%</span></div>
+    <div style="margin-top:8px;display:flex;gap:8px">
+      <span class="pill tp">🎯 TP 100%</span><span class="pill sl">🚨 SL -50%</span><span class="pill tr">📉 Trail 16%</span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="label">OPSI 2 · Compact</div>
+  <div class="v2">
+    <div class="h"><span class="dot"></span>FIRETAKE <span style="color:#5b6b8c">#42</span><span class="pnl">🟢 +49.6%</span></div>
+    <div style="clear:both"></div>
+    <div class="line">F1R3T4…90ab · ⚡ akashi_zone · 🟢 dry_run</div>
+    <div class="line">💰 $125.0K → ⬆️ $198.0K · 💵 $187.0K</div>
+    <div class="line">🎯 TP 100% · 🚨 SL -50% · 📉 Trail 16% · 💸 0.5 SOL</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="label">OPSI 3 · Light</div>
+  <div class="v3">
+    <div class="h"><span class="dot"></span><span class="title">FIRETAKE</span><span style="color:#94a3b8;font-size:13px">#42</span></div>
+    <div class="sub">F1R3T4…90ab · ⚡ akashi_zone · 🟢 dry_run</div>
+    <div class="div"></div>
+    <div class="f"><span class="lbl">💰 Entry</span><span class="val">$125.0K</span></div>
+    <div class="f"><span class="lbl">⬆️ ATH</span><span class="val">$198.0K</span></div>
+    <div class="f"><span class="lbl">💵 Current</span><span class="val">$187.0K</span></div>
+    <div class="div"></div>
+    <div class="f"><span class="lbl">💸 0.5000 SOL</span><span class="pnl">🟢 +49.6%</span></div>
+    <div style="margin-top:8px;display:flex;gap:8px">
+      <span class="pill">🎯 TP 100%</span><span class="pill">🚨 SL -50%</span><span class="pill">📉 Trail 16%</span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="label">OPSI 4 · Monochrome</div>
+  <div class="v4">
+    <div class="h"><span class="dot"></span><span class="title">FIRETAKE</span><span style="color:#666;font-size:13px">#42</span></div>
+    <div class="sub">F1R3T4…90ab · akashi_zone · dry_run</div>
+    <div class="div"></div>
+    <div class="f"><span class="lbl">Entry</span><span class="val">$125.0K</span></div>
+    <div class="f"><span class="lbl">ATH</span><span class="val">$198.0K</span></div>
+    <div class="f"><span class="lbl">Current</span><span class="val">$187.0K</span></div>
+    <div class="div"></div>
+    <div class="f"><span class="lbl">0.5000 SOL</span><span class="pnl">+49.6%</span></div>
+    <div style="margin-top:8px;display:flex;gap:8px">
+      <span class="pill">TP 100%</span><span class="pill">SL -50%</span><span class="pill">Trail 16%</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
