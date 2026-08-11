@@ -159,9 +159,15 @@ export function filterCandidate(candidate) {
 export async function buildCandidate({ mint, fee = null, signature = null, graduatedCoin = null, trendingToken = null, route }) {
   const strat = activeStrategy();
   const gmgn = await fetchGmgnTokenInfo(mint);
-  const jupiterAsset = await fetchJupiterAsset(mint);
-  const holders = await fetchJupiterHolders(mint);
-  const chart = await fetchJupiterChartContext(mint);
+  // Lazy Jupiter fetch: only hit Data API if signal data lacks mcap/holders
+  // (free tier → 429 fast; server-fed signal usually has these fields).
+  const needAsset = !(
+    (trendingToken?.market_cap || graduatedCoin?.marketCap || graduatedCoin?.usd_market_cap)
+    && (trendingToken?.holder_count || graduatedCoin?.numHolders || gmgn?.holder_count)
+  );
+  const jupiterAsset = needAsset ? await fetchJupiterAsset(mint) : null;
+  const holders = needAsset ? await fetchJupiterHolders(mint) : null;
+  const chart = needAsset ? await fetchJupiterChartContext(mint) : null;
   const savedWalletExposure = await fetchSavedWalletExposure(mint, holders);
   const twitterNarrative = await fetchTwitterNarrative(graduatedCoin || jupiterAsset, gmgn);
   const priceUsd = firstPositiveNumber(tokenPriceFromGmgn(gmgn), jupiterAsset?.usdPrice, trendingToken?.price);

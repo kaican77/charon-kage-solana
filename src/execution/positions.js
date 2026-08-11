@@ -15,7 +15,7 @@ import { sendPositionExit } from '../telegram/send.js';
 
 export async function freshEntryMarket(mint, candidate) {
   const gmgn = await fetchGmgnTokenInfo(mint, false);
-  const asset = await fetchJupiterAsset(mint, { useCache: false });
+  const asset = await fetchJupiterAsset(mint);
   const priceUsd = firstPositiveNumber(tokenPriceFromGmgn(gmgn), asset?.usdPrice, candidate.metrics?.priceUsd);
   const marketCapUsd = firstPositiveNumber(
     marketCapFromGmgn(gmgn),
@@ -31,7 +31,7 @@ export async function refreshCandidateForExecution(row) {
   const candidate = row.candidate;
   const mint = candidate.token.mint;
   const gmgn = await fetchGmgnTokenInfo(mint, false);
-  const asset = await fetchJupiterAsset(mint, { useCache: false });
+  const asset = await fetchJupiterAsset(mint);
   const holders = await fetchJupiterHolders(mint);
   const chart = await fetchJupiterChartContext(mint);
   const selectedTrending = trending.get(mint) || candidate.trending || null;
@@ -109,7 +109,7 @@ const sellInProgress = new Set();
 
 export async function refreshPosition(position, { autoExit = true, jupiterPnl = null } = {}) {
   const gmgn = await fetchGmgnTokenInfo(position.mint);
-  const asset = await fetchJupiterAsset(position.mint, { useCache: false });
+  const asset = await fetchJupiterAsset(position.mint);
   const price = firstPositiveNumber(tokenPriceFromGmgn(gmgn), asset?.usdPrice, position.high_water_price, position.entry_price);
   const mcap = firstPositiveNumber(
     marketCapFromGmgn(gmgn),
