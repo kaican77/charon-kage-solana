@@ -219,6 +219,7 @@ export function initDb() {
   ensureColumn('dry_run_positions', 'entry_signature', 'TEXT');
   ensureColumn('dry_run_positions', 'exit_signature', 'TEXT');
   ensureColumn('dry_run_positions', 'token_amount_raw', 'TEXT');
+  ensureColumn('dry_run_positions', 'price_history_json', "TEXT DEFAULT '[]'");
   ensureColumn('dry_run_positions', 'strategy_id', "TEXT DEFAULT 'dip_buy'");
   ensureColumn('dry_run_positions', 'partial_tp_done', 'INTEGER DEFAULT 0');
   ensureColumn('decision_logs', 'strategy_id', 'TEXT');
@@ -274,6 +275,9 @@ export function initDb() {
     min_gmgn_total_fee_sol: 0,
     min_holders: 0,
     max_top20_holder_percent: 100,
+    holder_deadzone_low: 100,
+    holder_deadzone_high: 400,
+    holder_deadzone_size_cut_percent: 0,
     min_saved_wallet_holders: 0,
     max_ath_distance_pct: -40,
     min_graduated_volume_usd: 0,
@@ -312,6 +316,9 @@ export function initDb() {
     min_fee_claim_sol: 0,
     min_gmgn_total_fee_sol: 0,
     min_holders: 1000,
+    holder_deadzone_low: 100,
+    holder_deadzone_high: 400,
+    holder_deadzone_size_cut_percent: 0,
     max_top20_holder_percent: 50,
     min_saved_wallet_holders: 0,
     max_ath_distance_pct: 0,
@@ -351,6 +358,9 @@ export function initDb() {
     min_fee_claim_sol: 0,
     min_gmgn_total_fee_sol: 0,
     min_holders: 500,
+    holder_deadzone_low: 100,
+    holder_deadzone_high: 400,
+    holder_deadzone_size_cut_percent: 50,
     max_top20_holder_percent: 60,
     min_saved_wallet_holders: 0,
     max_ath_distance_pct: -80,

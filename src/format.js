@@ -57,3 +57,20 @@ export function txLink(signature) {
 export function accountLink(address) {
   return `https://solscan.io/account/${address}`;
 }
+
+// Unicode sparkline (▁▂▃▄▅▆▇█) from a numeric array. Useful for showing
+// candle/price trend inside Telegram text cards without canvas deps.
+// Returns '' if input is empty or all-non-finite.
+export function sparkline(values) {
+  if (!Array.isArray(values) || values.length < 2) return '';
+  const vals = values.map(Number).filter(Number.isFinite);
+  if (vals.length < 2) return '';
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const range = max - min || 1;
+  const bars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+  return vals.map((v) => {
+    const idx = Math.min(bars.length - 1, Math.max(0, Math.floor(((v - min) / range) * bars.length)));
+    return bars[idx];
+  }).join('');
+}

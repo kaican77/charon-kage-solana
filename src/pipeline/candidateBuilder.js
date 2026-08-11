@@ -76,6 +76,25 @@ export function filterCandidate(candidate) {
     failures.push(`holders: ${holderCount} < ${strat.min_holders}`);
   }
 
+  // Holder deadzone [100, 400] soft flag — backtest from kaiserern: WR drops
+  // from 45.7% (out of zone) to 35.5% (in zone). 50% size-cut at execution
+  // recovers ~+2.25 SOL on 180 risky trades. The signal stays alive (token
+  // can still trigger) but execution halves the SOL risk.
+  const deadzoneLow = Number(strat.holder_deadzone_low ?? 100);
+  const deadzoneHigh = Number(strat.holder_deadzone_high ?? 400);
+  const inDeadzone = Number.isFinite(holderCount)
+    && holderCount >= deadzoneLow
+    && holderCount <= deadzoneHigh;
+  if (inDeadzone && strat.holder_deadzone_size_cut_percent > 0) {
+    candidate.sizeCutPercent = Number(strat.holder_deadzone_size_cut_percent);
+    candidate.riskFlags = candidate.riskFlags || [];
+    candidate.riskFlags.push({
+      type: 'holder_deadzone',
+      severity: 2,
+      reason: `holders ${holderCount} in deadzone [${deadzoneLow}, ${deadzoneHigh}] — size cut ${strat.holder_deadzone_size_cut_percent}%`,
+    });
+  }
+
   // Top holder concentration — top-20 combined (anti-bundler), plus single-whale cap
   if (strat.max_top20_holder_percent < 100 && Number.isFinite(maxTop20) && maxTop20 > strat.max_top20_holder_percent) {
     failures.push(`top20 holders: ${maxTop20.toFixed(1)}% > ${strat.max_top20_holder_percent}%`);

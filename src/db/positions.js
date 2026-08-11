@@ -28,7 +28,14 @@ export function allPositions(limit = 10) {
 
 export function createDryRunPosition(candidateId, candidate, decision, reason = 'llm_buy') {
   const strat = activeStrategy();
-  const sizeSol = strat.position_size_sol ?? numSetting('dry_run_buy_sol', 0.1);
+  let sizeSol = strat.position_size_sol ?? numSetting('dry_run_buy_sol', 0.1);
+  // Apply deadzone size-cut (kaiserern Tier 1B): if candidate is flagged
+  // holder_deadzone, reduce size by sizeCutPercent before opening.
+  const cut = Number(candidate.sizeCutPercent || 0);
+  if (cut > 0) {
+    sizeSol = +(sizeSol * (1 - cut / 100)).toFixed(6);
+    console.log(`[position] size cut ${cut}% → ${sizeSol} SOL (deadzone)`);
+  }
   const entryPrice = Number(candidate.metrics.priceUsd || 0) || null;
   const entryMcap = Number(candidate.metrics.marketCapUsd || candidate.metrics.graduatedMarketCapUsd || 0) || null;
   const tp = Number(decision.suggested_tp_percent || strat.tp_percent || numSetting('default_tp_percent', 50));
@@ -82,7 +89,12 @@ export function createDryRunPosition(candidateId, candidate, decision, reason = 
 
 export function createLivePosition(candidateId, candidate, decision, swap, reason = 'live_buy') {
   const strat = activeStrategy();
-  const sizeSol = strat.position_size_sol ?? numSetting('dry_run_buy_sol', 0.1);
+  let sizeSol = strat.position_size_sol ?? numSetting('dry_run_buy_sol', 0.1);
+  const cut = Number(candidate.sizeCutPercent || 0);
+  if (cut > 0) {
+    sizeSol = +(sizeSol * (1 - cut / 100)).toFixed(6);
+    console.log(`[position] live size cut ${cut}% → ${sizeSol} SOL (deadzone)`);
+  }
   const entryPrice = Number(candidate.metrics.priceUsd || 0) || null;
   const entryMcap = Number(candidate.metrics.marketCapUsd || candidate.metrics.graduatedMarketCapUsd || 0) || null;
   const tp = Number(decision.suggested_tp_percent || strat.tp_percent || numSetting('default_tp_percent', 50));
