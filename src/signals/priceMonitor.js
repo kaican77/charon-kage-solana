@@ -8,11 +8,18 @@ let candidateHandler = null;
 export function setCandidateHandler(fn) { candidateHandler = fn; }
 
 export function storePriceAlert({ mint, strategyId, alertType, targetPriceUsd, targetAthDistancePercent, signal, expiresMs }) {
-  // Check if alert already exists for this mint
+  // One active alert per mint: if a pending alert already exists, reuse it.
+  // If a triggered/expired one exists within the last 10 min, skip creating a
+  // duplicate (prevents 4x trigger spam for the same mint from signal batch).
   const existing = db.prepare(
     "SELECT id FROM price_alerts WHERE mint = ? AND status = 'pending' LIMIT 1"
   ).get(mint);
   if (existing) return existing.id;
+
+  const recent = db.prepare(
+    "SELECT id FROM price_alerts WHERE mint = ? AND status IN ('triggered', 'expired') AND created_at_ms > ? LIMIT 1"
+  ).get(mint, now() - 10 * 60 * 1000);
+  if (recent) return recent.id;
 
   const result = db.prepare(`
     INSERT INTO price_alerts (mint, strategy_id, alert_type, target_price_usd, target_ath_distance_percent,

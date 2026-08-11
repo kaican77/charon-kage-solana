@@ -1,6 +1,26 @@
 import axios from 'axios';
 import { now } from '../utils.js';
 
+// Cache tweet narrative + failed URLs to avoid refetching the same tweet
+// every candidate build (404 spam seen in logs). TTL 30 min for failures,
+// 5 min for successes.
+const twitterCache = new Map();
+const TWITTER_FAIL_TTL_MS = 30 * 60 * 1000;
+const TWITTER_OK_TTL_MS = 5 * 60 * 1000;
+function twitterCacheGet(url) {
+  const hit = twitterCache.get(url);
+  if (hit && now() - hit.at < (hit.ok ? TWITTER_OK_TTL_MS : TWITTER_FAIL_TTL_MS)) return hit.data;
+  if (hit) twitterCache.delete(url);
+  return undefined;
+}
+function twitterCacheSet(url, data, ok) {
+  if (twitterCache.size >= 200) {
+    const oldest = twitterCache.keys().next().value;
+    if (oldest !== undefined) twitterCache.delete(oldest);
+  }
+  twitterCache.set(url, { at: now(), data, ok });
+}
+
 function extractTweetUrl(input) {
   const urls = [
     input?.twitter,
@@ -81,6 +101,8 @@ function viralityScore(metrics) {
 async function fetchTwitterNarrative(graduatedCoin, gmgn) {
   const url = extractTweetUrl(graduatedCoin) || extractTweetUrl(gmgn);
   if (!url) return null;
+  const cached = twitterCacheGet(url);
+  if (cached !== undefined) return cached;
   try {
     const apiUrl = toFxTwitterApi(url);
     const api = await axios.get(apiUrl, {
@@ -89,9 +111,12 @@ async function fetchTwitterNarrative(graduatedCoin, gmgn) {
     });
     const text = extractTweetTextFromFx(api.data);
     const metrics = extractTweetMetricsFromFx(api.data);
-    return { url, fxUrl: toFxTwitter(url), apiUrl, text, metrics, virality: viralityScore(metrics) };
+    const result = { url, fxUrl: toFxTwitter(url), apiUrl, text, metrics, virality: viralityScore(metrics) };
+    twitterCacheSet(url, result, true);
+    return result;
   } catch (apiErr) {
     console.log(`[twitter] api ${url} ${apiErr.response?.status || ''} ${apiErr.message}`);
+    twitterCacheSet(url, null, false);
   }
 
   try {
@@ -102,9 +127,12 @@ async function fetchTwitterNarrative(graduatedCoin, gmgn) {
     });
     const text = extractTweetTextFromFx(res.data);
     const metrics = extractTweetMetricsFromFx(res.data);
-    return { url, fxUrl, text, metrics, virality: viralityScore(metrics) };
+    const result = { url, fxUrl, text, metrics, virality: viralityScore(metrics) };
+    twitterCacheSet(url, result, true);
+    return result;
   } catch (err) {
     console.log(`[twitter] ${url} ${err.message}`);
+    twitterCacheSet(url, { url, fxUrl: toFxTwitter(url), text: null, error: err.message }, false);
     return { url, fxUrl: toFxTwitter(url), text: null, error: err.message };
   }
 }
