@@ -72,7 +72,9 @@ export function setActiveStrategy(id) {
 }
 
 export function updateStrategyConfig(id, config) {
-  db.prepare('UPDATE strategies SET config_json = ? WHERE id = ?').run(JSON.stringify(config), id);
+  // Strip `enabled` if it leaked in — column is the source of truth.
+  const { enabled: _ignored, ...clean } = config;
+  db.prepare('UPDATE strategies SET config_json = ? WHERE id = ?').run(JSON.stringify(clean), id);
   if (strategyCache.id === id) {
     strategyCache.config = null;
     strategyCache.at = 0;
