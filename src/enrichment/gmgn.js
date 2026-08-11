@@ -4,6 +4,17 @@ import { now, sleep } from '../utils.js';
 import { numSetting, setting } from '../db/settings.js';
 
 const gmgnCache = new Map();
+
+// Cap cache size — same OOM protection as Jupiter asset cache. GMGN cache
+// entries are bigger (token info + rank rows), so cap tighter at 300.
+const GMGN_CACHE_MAX = 300;
+function gmgnCacheSet(mint, data) {
+  if (gmgnCache.size >= GMGN_CACHE_MAX) {
+    const oldest = gmgnCache.keys().next().value;
+    if (oldest !== undefined) gmgnCache.delete(oldest);
+  }
+  gmgnCache.set(mint, { at: now(), data });
+}
 let lastGmgnRequestAt = 0;
 let gmgnQueue = Promise.resolve();
 const gmgnBackoff = {
@@ -147,7 +158,7 @@ async function fetchGmgnTokenInfo(mint, useCache = true) {
   const cached = gmgnCache.get(mint);
   if (useCache && cached && now() - cached.at < GMGN_CACHE_TTL_MS) return cached.data;
   if (gmgnBackoffActive('token')) {
-    gmgnCache.set(mint, { at: now(), data: null });
+    gmgnCacheSet(mint, null);
     return null;
   }
 
@@ -156,14 +167,14 @@ async function fetchGmgnTokenInfo(mint, useCache = true) {
       params: { chain: 'sol', address: mint },
     });
     const data = payload?.data?.data || payload?.data || payload;
-    gmgnCache.set(mint, { at: now(), data });
+    gmgnCacheSet(mint, data);
     return data;
   } catch (err) {
     setGmgnBackoff('token', err);
     if (err.response?.status !== 403 && err.response?.status !== 429) {
       console.log(`[gmgn] ${mint.slice(0, 8)}... ${err.response?.status || ''} ${err.message}`);
     }
-    gmgnCache.set(mint, { at: now(), data: null });
+    gmgnCacheSet(mint, null);
     return null;
   }
 }

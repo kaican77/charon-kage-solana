@@ -33,6 +33,18 @@ function setJupiterBackoff(name, err) {
 
 const jupiterAssetCache = new Map();
 
+// Cache TTL 20s (default per-call) + max 500 entries — beyond that we evict
+// oldest by insertion order. Prevents unbounded growth across many trending
+// polls (the classic OOM leak: cache filled forever, heap → 1.5GB → crash).
+const JUPITER_ASSET_CACHE_MAX = 500;
+function jupiterAssetCacheSet(mint, data) {
+  if (jupiterAssetCache.size >= JUPITER_ASSET_CACHE_MAX) {
+    const oldest = jupiterAssetCache.keys().next().value;
+    if (oldest !== undefined) jupiterAssetCache.delete(oldest);
+  }
+  jupiterAssetCache.set(mint, { at: now(), data });
+}
+
 function jupiterAssetBackoffActive() {
   return jupiterBackoffActive('asset');
 }
@@ -88,7 +100,7 @@ async function fetchJupiterAsset(mint, { useCache = true, ttlMs = 20_000 } = {})
     });
     const rows = Array.isArray(res.data) ? res.data : [];
     const data = rows.find(row => row?.id === mint) || rows[0] || null;
-    jupiterAssetCache.set(mint, { at: now(), data });
+    jupiterAssetCacheSet(mint, data);
     return data;
   } catch (err) {
     setJupiterBackoff('asset', err);
