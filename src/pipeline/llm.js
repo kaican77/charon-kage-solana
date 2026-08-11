@@ -47,7 +47,7 @@ export function compactCandidateForLlm(row) {
       ? {
           count: c.holders.count ?? (Array.isArray(c.holders) ? c.holders.length : null),
           top20: c.holders.top20 ?? null,
-          top20Percent: c.holders.top20Percent ?? c.holders.maxHolderPercent ?? null,
+          top20Percent: c.holders?.top20Percent ?? c.holders?.maxHolderPercent ?? null,
         }
       : null,
     chart: {

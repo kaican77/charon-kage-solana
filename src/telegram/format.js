@@ -70,8 +70,8 @@ export function candidateSummary(candidate, decision = null) {
   ].join('  '));
   sections.push([
     `👥 Holders: ${candidate.metrics.holderCount || '?'}`,
-    `📊 Top20: ${fmtPct(candidate.holders.top20Percent)}`,
-    `🔝 Max holder: ${fmtPct(candidate.holders.maxHolderPercent)}`,
+    `📊 Top20: ${fmtPct(candidate.holders?.top20Percent ?? 0)}`,
+    `🔝 Max holder: ${fmtPct(candidate.holders?.maxHolderPercent ?? 0)}`,
     `👛 Saved: ${candidate.savedWalletExposure.holderCount}/${candidate.savedWalletExposure.checked}`,
   ].join('  '));
   if (candidate.trending) {

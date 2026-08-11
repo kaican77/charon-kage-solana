@@ -33,8 +33,8 @@ export function filterCandidate(candidate) {
   const mcap = candidate.metrics.marketCapUsd;
   const totalFees = candidate.metrics.gmgnTotalFeesSol;
   const gradVolume = candidate.metrics.graduatedVolumeUsd;
-  const maxTop20 = candidate.holders.top20Percent;
-  const maxWhale = candidate.holders.maxHolderPercent;
+  const maxTop20 = candidate.holders?.top20Percent ?? null;
+  const maxWhale = candidate.holders?.maxHolderPercent ?? null;
   const savedCount = candidate.savedWalletExposure.holderCount;
   const feeSol = candidate.feeClaim?.distributedSol;
   const holderCount = Number(candidate.metrics.holderCount || 0);
