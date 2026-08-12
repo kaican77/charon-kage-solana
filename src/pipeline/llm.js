@@ -106,6 +106,13 @@ export async function decideCandidateBatch(rows, triggerCandidateId) {
     const res = await axios.post(`${LLM_BASE_URL.replace(/\/$/, '')}/chat/completions`, {
       model: LLM_MODEL,
       temperature: 0.2,
+      // deepseek-v4-flash is a reasoning model: without disabling thinking it
+      // burns 6K+ tokens "thinking" and routinely exceeds LLM_TIMEOUT_MS
+      // (observed: 57s for a 1-candidate batch, timeout at 60s with 10-candidate
+      // batches). Disabling reasoning + capping output turns a 50s+ call into
+      // ~2-9s and the verdict is the same (verified live).
+      thinking: { type: 'disabled' },
+      max_tokens: 800,
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: JSON.stringify(user) },
