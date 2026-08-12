@@ -167,7 +167,6 @@ export function formatPosition(position) {
     position.entry_signature ? `➡️ Entry TX: <a href="${txLink(position.entry_signature)}">${short(position.entry_signature)}</a>` : null,
     divider(),
     `💰 Entry mcap: <b>${fmtUsd(position.entry_mcap)}</b>`,
-    `⬆️ High mcap:  <b>${fmtUsd(position.high_water_mcap || position.entry_mcap)}</b>`,
     isClosed
       ? `💵 Exit mcap:  <b>${fmtUsd(position.exit_mcap)}</b>`
       : `💵 Current mcap: <b>${fmtUsd(currentMcap)}</b> · updated now`,
