@@ -1,4 +1,4 @@
-import { escapeHtml, fmtPct, fmtPnl, fmtSol, fmtUsd, short, gmgnLink, txLink, accountLink, divider, lightDivider, progressBar, sparkline } from '../format.js';
+import { escapeHtml, fmtPct, fmtPnl, fmtSol, fmtUsd, short, gmgnLink, txLink, accountLink, divider, lightDivider, progressBar } from '../format.js';
 import { firstPositiveNumber } from '../utils.js';
 import { positionTpSl, boolSetting } from '../db/settings.js';
 
@@ -167,17 +167,10 @@ export function formatPosition(position) {
     position.entry_signature ? `➡️ Entry TX: <a href="${txLink(position.entry_signature)}">${short(position.entry_signature)}</a>` : null,
     divider(),
     `💰 Entry mcap: <b>${fmtUsd(position.entry_mcap)}</b>`,
-    `⬆️ ATH mcap:   <b>${fmtUsd(position.high_water_mcap || position.entry_mcap)}</b>`,
+    `⬆️ High mcap:  <b>${fmtUsd(position.high_water_mcap || position.entry_mcap)}</b>`,
     isClosed
       ? `💵 Exit mcap:  <b>${fmtUsd(position.exit_mcap)}</b>`
       : `💵 Current mcap: <b>${fmtUsd(currentMcap)}</b> · updated now`,
-    (() => {
-      try {
-        const hist = JSON.parse(position.price_history_json || '[]');
-        const line = sparkline(hist);
-        return line ? `📈 ${line}` : null;
-      } catch { return null; }
-    })(),
     divider(),
     `💸 Size: <b>${fmtSol(position.size_sol)} SOL</b> · ${pnlTag.icon} PnL: <b>${pnlTag.text}</b>`,
     `🎯 TP: ${fmtPct(tpSl.tp_percent)} · 🚨 SL: ${fmtPct(tpSl.sl_percent)} · 📉 Trail: ${tpSl.trailing_enabled ? `${fmtPct(tpSl.trailing_percent)}` : 'off'}`,
