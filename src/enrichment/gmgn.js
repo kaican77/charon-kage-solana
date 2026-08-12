@@ -158,7 +158,6 @@ async function fetchGmgnTokenInfo(mint, useCache = true) {
   const cached = gmgnCache.get(mint);
   if (useCache && cached && now() - cached.at < GMGN_CACHE_TTL_MS) return cached.data;
   if (gmgnBackoffActive('token')) {
-    gmgnCacheSet(mint, null);
     return null;
   }
 

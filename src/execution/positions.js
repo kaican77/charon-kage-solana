@@ -110,6 +110,10 @@ const sellInProgress = new Set();
 export async function refreshPosition(position, { autoExit = true, jupiterPnl = null } = {}) {
   const gmgn = await fetchGmgnTokenInfo(position.mint);
   const asset = await fetchJupiterAsset(position.mint);
+  // Stale guard: if both sources failed (backoff / rate limit), skip this tick.
+  // Using high_water/entry fallbacks here would freeze the position at a stale
+  // price and let a real dump blow through SL undetected (seen: -48% SL breach).
+  if (!gmgn && !asset) return null;
   const price = firstPositiveNumber(tokenPriceFromGmgn(gmgn), asset?.usdPrice, position.high_water_price, position.entry_price);
   const mcap = firstPositiveNumber(
     marketCapFromGmgn(gmgn),
