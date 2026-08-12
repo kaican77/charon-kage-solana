@@ -1,7 +1,6 @@
 import { now, firstPositiveNumber, marketCapFromGmgn, tokenPriceFromGmgn, lamToSol } from '../utils.js';
 import { activeStrategy } from '../db/settings.js';
 import { fetchGmgnTokenInfo, extractSmartFields, fetchGmgnRankRow, fetchGmgnKline, calcRsi } from '../enrichment/gmgn.js';
-import { calcSupertrend, supertrendDistancePct } from '../enrichment/indicators.js';
 import { fetchJupiterAsset, fetchJupiterHolders, fetchJupiterChartContext } from '../enrichment/jupiter.js';
 import { fetchSavedWalletExposure } from '../enrichment/wallets.js';
 import { fetchTwitterNarrative } from '../enrichment/twitter.js';
@@ -38,25 +37,6 @@ export function filterCandidate(candidate) {
   const maxWhale = candidate.holders?.maxHolderPercent ?? null;
   const savedCount = candidate.savedWalletExposure.holderCount;
   const feeSol = candidate.feeClaim?.distributedSol;
-
-  // ── DLMM pool gate ───────────────────────────────────────────────
-  if (strat.requiresDlmmPool && !candidate.dlmmPool) {
-    failures.push(`missing DLMM pool`);
-  }
-
-  // ── Supertrend gate ─────────────────────────────────────────────
-  if (strat.supertrend_enabled) {
-    const st = candidate.metrics.supertrend;
-    const distLimit = Number(strat.supertrend_buy_distance_pct ?? 3);
-    if (!st || !Number.isFinite(st.line)) {
-      failures.push('supertrend: no data');
-    } else if (st.direction !== 1) {
-      failures.push(`supertrend: downtrend (dir=${st.direction})`);
-    } else if (st.distancePct == null || st.distancePct > distLimit) {
-      // Price too far above the line — not in the "touching / near" buy zone.
-      failures.push(`supertrend: price ${st.distancePct?.toFixed(2) ?? '?'}% above line (max ${distLimit}%)`);
-    }
-  }
   const holderCount = Number(candidate.metrics.holderCount || 0);
   const trendingVolume = Number(candidate.trending?.volume ?? 0);
   const trendingSwaps = Number(candidate.trending?.swaps ?? 0);
@@ -189,19 +169,6 @@ export async function buildCandidate({ mint, fee = null, signature = null, gradu
   const holders = needAsset ? await fetchJupiterHolders(mint) : null;
   const chart = needAsset ? await fetchJupiterChartContext(mint) : null;
   const savedWalletExposure = await fetchSavedWalletExposure(mint, holders);
-  // DLMM pool detection (if strategy requires it)
-  let dlmmPool = null;
-  if (strat.requires_dlmm_pool) {
-    try {
-      const { fetchDlmmPoolInfo } = await import('../enrichment/dlmmPool.js');
-      dlmmPool = await fetchDlmmPoolInfo(mint);
-      if (!dlmmPool) {
-        console.log(`[dlmm] no DLMM pool for ${mint.slice(0, 8)}...`);
-      }
-    } catch (err) {
-      console.log(`[dlmm] fetch error for ${mint.slice(0, 8)}...: ${err.message}`);
-    }
-  }
   const twitterNarrative = await fetchTwitterNarrative(graduatedCoin || jupiterAsset, gmgn);
   const priceUsd = firstPositiveNumber(tokenPriceFromGmgn(gmgn), jupiterAsset?.usdPrice, trendingToken?.price);
   const marketCapUsd = firstPositiveNumber(
@@ -232,21 +199,12 @@ export async function buildCandidate({ mint, fee = null, signature = null, gradu
     }
   }
 
-  // RSI 14 + Supertrend enrichment: fetch OHLCV and compute indicators so
-  // strategy gates like max_rsi_14 and supertrend buy zones can work.
-  // Use the strategy's configured timeframe (5m/15m) for the candle buffer.
-  const tf = strat.timeframe || '5m';
+  // RSI 14 enrichment: fetch OHLCV and compute RSI so strategy gates like
+  // max_rsi_14 (Akashi Zone: buy below 50) can work.
   let rsi14 = null;
-  let supertrend = null;
-  let supertrendDistPct = null;
-  const candles = await fetchGmgnKline(mint, { resolution: tf, limit: 40 });
+  const candles = await fetchGmgnKline(mint, { resolution: '15m', limit: 30 });
   if (candles.length) {
     rsi14 = calcRsi(candles.map(c => c.close), 14);
-    supertrend = calcSupertrend(candles, Number(strat.supertrend_period || 10), Number(strat.supertrend_multiplier || 3));
-    supertrendDistPct = supertrendDistancePct(candles, Number(strat.supertrend_period || 10), Number(strat.supertrend_multiplier || 3));
-    if (strat.supertrend_enabled && supertrend) {
-      console.log(`[supertrend] ${mint.slice(0, 8)}... tf=${tf} line=${supertrend.line?.toFixed(6)} dir=${supertrend.direction} dist=${supertrendDistPct?.toFixed(2)}%`);
-    }
   }
 
   const candidate = {
@@ -279,11 +237,6 @@ export async function buildCandidate({ mint, fee = null, signature = null, gradu
       trendingTop10HolderRate: Number(smartFields.top_10_holder_rate ?? trendingToken?.top_10_holder_rate ?? 0),
       trendingDevTeamHoldRate: Number(smartFields.dev_team_hold_rate ?? trendingToken?.dev_team_hold_rate ?? 0),
       rsi14,
-      supertrend: supertrend ? {
-        line: supertrend.line,
-        direction: supertrend.direction,
-        distancePct: supertrendDistPct,
-      } : null,
       athDrawdownPct: (() => {
         const ath = Number(trendingToken?.history_highest_market_cap || 0);
         const cur = Number(trendingToken?.market_cap || 0);
@@ -312,7 +265,6 @@ export async function buildCandidate({ mint, fee = null, signature = null, gradu
     chart,
     savedWalletExposure,
     twitterNarrative,
-    dlmmPool,
     createdAtMs: now(),
   };
   candidate.filters = filterCandidate(candidate);

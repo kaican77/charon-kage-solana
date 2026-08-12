@@ -220,7 +220,7 @@ export function initDb() {
   ensureColumn('dry_run_positions', 'exit_signature', 'TEXT');
   ensureColumn('dry_run_positions', 'token_amount_raw', 'TEXT');
   ensureColumn('dry_run_positions', 'price_history_json', "TEXT DEFAULT '[]'");
-  ensureColumn('dry_run_positions', 'strategy_id', "TEXT DEFAULT 'dip_buy'");
+  ensureColumn('dry_run_positions', 'strategy_id', "TEXT DEFAULT 'smart_money'");
   ensureColumn('dry_run_positions', 'partial_tp_done', 'INTEGER DEFAULT 0');
   ensureColumn('decision_logs', 'strategy_id', 'TEXT');
 
@@ -263,48 +263,6 @@ export function initDb() {
   // Seed default strategies
   const stratInsert = db.prepare('INSERT OR IGNORE INTO strategies (id, name, enabled, config_json, created_at_ms) VALUES (?, ?, ?, ?, ?)');
   const ts = Date.now();
-
-  stratInsert.run('dip_buy', 'Dip Buy', 1, JSON.stringify({
-    entry_mode: 'wait_for_dip',
-    min_source_count: 1,
-    require_fee_claim: false,
-    token_age_max_ms: 86400000,
-    min_mcap_usd: 25000,
-    max_mcap_usd: 500000,
-    min_fee_claim_sol: 0,
-    min_gmgn_total_fee_sol: 0,
-    min_holders: 0,
-    max_top20_holder_percent: 100,
-    holder_deadzone_low: 100,
-    holder_deadzone_high: 400,
-    holder_deadzone_size_cut_percent: 0,
-    min_saved_wallet_holders: 0,
-    max_ath_distance_pct: -40,
-    min_graduated_volume_usd: 0,
-    trending_min_volume_usd: 0,
-    trending_min_swaps: 0,
-    trending_max_rug_ratio: 0.3,
-    trending_max_bundler_rate: 0.5,
-    min_smart_degen_count: 0,
-    min_renowned_count: 0,
-    max_rsi_14: 0,
-    position_size_sol: 0.05,
-    max_open_positions: 10,
-    tp_percent: 30,
-    sl_percent: -20,
-    trailing_enabled: true,
-    trailing_percent: 15,
-    trailing_tight_from_percent: 40,
-    trailing_tight_percent: 5,
-    trailing_floor_percent: 8,
-    partial_tp: false,
-    partial_tp_at_percent: 0,
-    partial_tp_sell_percent: 0,
-    max_hold_ms: 0,
-    use_llm: true,
-    llm_min_confidence: 60,
-    llm_candidate_pick_count: 10,
-  }), ts);
 
   stratInsert.run('smart_money', 'Smart Money', 0, JSON.stringify({
     entry_mode: 'immediate',
@@ -389,59 +347,6 @@ export function initDb() {
     use_llm: true,
     llm_candidate_pick_count: 10,
     llm_min_confidence: 70,
-  }), ts);
-
-  stratInsert.run('dlmm_pool', 'DLMM Pool', 0, JSON.stringify({
-    entry_mode: 'immediate',
-    min_source_count: 1,
-    require_fee_claim: false,
-    token_age_max_ms: 86400000,
-    // DLMM gate: candidate must have a Meteora DLMM pool
-    requiresDlmmPool: true,
-    min_mcap_usd: 250000,
-    max_mcap_usd: 5000000,
-    min_fee_claim_sol: 0,
-    min_gmgn_total_fee_sol: 0,
-    min_holders: 0,
-    holder_deadzone_low: 100,
-    holder_deadzone_high: 400,
-    holder_deadzone_size_cut_percent: 0,
-    max_top20_holder_percent: 100,
-    min_saved_wallet_holders: 0,
-    max_ath_distance_pct: 0,
-    min_graduated_volume_usd: 0,
-    // Bundler cap 50%; rug history up to 100% acceptable (no rug gate)
-    trending_min_volume_usd: 0,
-    trending_min_swaps: 0,
-    trending_max_rug_ratio: 1,
-    trending_max_bundler_rate: 0.5,
-    min_smart_degen_count: 0,
-    min_renowned_count: 0,
-    max_rsi_14: 0,
-    position_size_sol: 0.1,
-    max_open_positions: 10,
-    tp_percent: 30,
-    sl_percent: -20,
-    trailing_enabled: true,
-    trailing_percent: 15,
-    trailing_tight_from_percent: 40,
-    trailing_tight_percent: 5,
-    trailing_floor_percent: 8,
-    partial_tp: false,
-    partial_tp_at_percent: 0,
-    partial_tp_sell_percent: 0,
-    max_hold_ms: 0,
-    use_llm: true,
-    llm_min_confidence: 60,
-    llm_candidate_pick_count: 10,
-    // Timeframe preference (5m or 15m); used for screening/resolution.
-    timeframe: '5m',
-    // Supertrend buy zone: price must be in an uptrend (above the line) and
-    // within supertrend_buy_distance_pct% of the supertrend line (touching/near).
-    supertrend_enabled: true,
-    supertrend_period: 10,
-    supertrend_multiplier: 3,
-    supertrend_buy_distance_pct: 3,
   }), ts);
 
   // Migration: remove retired strategies from existing DBs

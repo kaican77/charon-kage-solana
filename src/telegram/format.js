@@ -8,7 +8,6 @@ const ROUTE_ICONS = {
   trending: '📈',
   smart_money: '🧠',
   akashi_zone: '⚡',
-  dip_buy: '📉',
 };
 
 export function formatRecipients(shareholders) {
