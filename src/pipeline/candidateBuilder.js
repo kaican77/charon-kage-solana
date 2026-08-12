@@ -136,6 +136,22 @@ export function filterCandidate(candidate) {
     if (strat.trending_max_bundler_rate > 0 && Number.isFinite(bundlerRate) && bundlerRate > strat.trending_max_bundler_rate) {
       failures.push(`trending bundler rate: ${bundlerRate} > ${strat.trending_max_bundler_rate}`);
     }
+    const top10Rate = Number(candidate.metrics.trendingTop10HolderRate ?? 0);
+    if (strat.trending_max_top10_holder_rate > 0 && Number.isFinite(top10Rate) && top10Rate > strat.trending_max_top10_holder_rate) {
+      failures.push(`top10 holders: ${(top10Rate * 100).toFixed(1)}% > ${strat.trending_max_top10_holder_rate * 100}%`);
+    }
+    const devHoldRate = Number(candidate.metrics.trendingDevTeamHoldRate ?? 0);
+    if (strat.trending_max_dev_hold_rate != null && strat.trending_max_dev_hold_rate >= 0 && Number.isFinite(devHoldRate) && devHoldRate > strat.trending_max_dev_hold_rate) {
+      failures.push(`dev hold: ${(devHoldRate * 100).toFixed(1)}% > ${strat.trending_max_dev_hold_rate * 100}%`);
+    }
+    const sniperHoldRate = Number(candidate.metrics.trendingTop70SniperHoldRate ?? 0);
+    if (strat.trending_max_sniper_hold_rate > 0 && Number.isFinite(sniperHoldRate) && sniperHoldRate > strat.trending_max_sniper_hold_rate) {
+      failures.push(`sniper hold: ${(sniperHoldRate * 100).toFixed(1)}% > ${strat.trending_max_sniper_hold_rate * 100}%`);
+    }
+    const dexBoostFee = Number(candidate.metrics.trendingDexBoostFee ?? 0);
+    if (strat.trending_require_dex_paid && dexBoostFee <= 0) {
+      failures.push('dex paid: no DEXScreener boost fee');
+    }
     const smartDegen = Number(candidate.metrics.trendingSmartDegenCount ?? 0);
     if (strat.min_smart_degen_count > 0 && smartDegen < strat.min_smart_degen_count) {
       failures.push(`smart money: ${smartDegen} < ${strat.min_smart_degen_count}`);
@@ -236,6 +252,7 @@ export async function buildCandidate({ mint, fee = null, signature = null, gradu
       trendingRatTraderAmountRate: Number(smartFields.rat_trader_amount_rate ?? trendingToken?.rat_trader_amount_rate ?? 0),
       trendingTop10HolderRate: Number(smartFields.top_10_holder_rate ?? trendingToken?.top_10_holder_rate ?? 0),
       trendingDevTeamHoldRate: Number(smartFields.dev_team_hold_rate ?? trendingToken?.dev_team_hold_rate ?? 0),
+      trendingDexBoostFee: Number(smartFields.dexscr_boost_fee ?? trendingToken?.dexscr_boost_fee ?? 0),
       rsi14,
       athDrawdownPct: (() => {
         const ath = Number(trendingToken?.history_highest_market_cap || 0);

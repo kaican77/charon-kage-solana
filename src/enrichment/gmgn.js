@@ -192,7 +192,7 @@ function normalizedTrendingRows(payload) {
 const SMART_FIELD_KEYS = [
   'smart_degen_count', 'renowned_count', 'sniper_count', 'top70_sniper_hold_rate',
   'rat_trader_amount_rate', 'top_10_holder_rate', 'rug_ratio', 'bundler_rate',
-  'is_wash_trading', 'is_honeypot', 'dev_team_hold_rate',
+  'is_wash_trading', 'is_honeypot', 'dev_team_hold_rate', 'dexscr_boost_fee',
 ];
 
 // Extract the smart-money / risk fields GMGN rank rows carry. Returns {} when
